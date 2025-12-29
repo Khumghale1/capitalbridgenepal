@@ -4,7 +4,7 @@ export const mockBusinesses: Business[] = [
    {
     id: "1",
     name: "Vistara Nepal",
-    category: "Tech Company",
+    category: " Investment firm",
     location: "Kathmandu",
     tagline:
       "Building Nepal's leading SaaS platform for small businesses with innovative cloud solutions.",
