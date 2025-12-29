@@ -57,7 +57,7 @@ export default function About() {
             <div className="animate-fade-up mb-6 inline-flex items-center gap-2 rounded-full bg-teal-50 px-4 py-2">
               <Building2 className="h-5 w-5 text-primary" />
               <span className="font-medium text-primary">
-                About InvestNepal
+                About CapitalBridgeNepal
               </span>
             </div>
             <h1
@@ -89,7 +89,7 @@ export default function About() {
               </h2>
               <div className="space-y-4 text-muted-foreground">
                 <p>
-                  InvestNepal was born from a simple observation: Nepal has
+                  CapitalBridgeNepal was born from a simple observation: Nepal has
                   incredible entrepreneurial talent, but connecting businesses
                   with the right investors has always been a challenge.
                 </p>

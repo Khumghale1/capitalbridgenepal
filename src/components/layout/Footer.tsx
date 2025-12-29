@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import {
-  Building2,
   Mail,
   Phone,
   MapPin,
@@ -51,12 +50,11 @@ export function Footer() {
           {/* Brand Column */}
           <div className="lg:col-span-2">
             <Link to="/" className="mb-4 flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-hero">
-                <Building2 className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <span className="text-xl font-bold text-foreground">
-                InvestNepal
-              </span>
+              <img
+                src="/Black and Gold Modern Element Centric Business Logo.svg"
+                alt="CapitalBridgeNepal Logo"
+                className="h-26 w-26 md:h-32 md:w-35"
+              />
             </Link>
             <p className="mb-6 max-w-sm text-muted-foreground">
               Connecting Nepal's growing businesses with investors seeking
@@ -65,7 +63,7 @@ export function Footer() {
             <div className="space-y-3 text-sm text-muted-foreground">
               <div className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-primary" />
-                <span>contact@investnepal.com</span>
+                <span>contact@capitalbridgenepal.com</span>
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-primary" />
@@ -135,7 +133,7 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 md:flex-row">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} InvestNepal. All rights reserved.
+            © {new Date().getFullYear()} CapitalBridgeNepal. All rights reserved.
           </p>
 
           <div className="flex items-center gap-2">
@@ -155,7 +153,7 @@ export function Footer() {
 
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
             <span>🇳🇵</span>
-            <span>Made in Nepal</span>
+            <span>Made by SimplifyTech</span>
           </div>
         </div>
       </div>

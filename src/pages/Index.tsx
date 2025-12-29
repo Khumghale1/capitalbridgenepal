@@ -309,7 +309,7 @@ export default function Index() {
         <div className="container">
           <div className="mb-12 text-center">
             <h2 className="mb-2 text-3xl font-bold text-foreground md:text-4xl">
-              Why Choose InvestNepal
+              Why Choose CapitalBridgeNepal
             </h2>
             <p className="text-muted-foreground">
               Building trust through transparency and professionalism

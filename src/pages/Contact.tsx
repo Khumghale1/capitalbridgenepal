@@ -28,8 +28,8 @@ export default function Contact() {
     {
       icon: Mail,
       title: "Email",
-      value: "contact@investnepal.com",
-      link: "mailto:contact@investnepal.com",
+      value: "contact@capitalbridgenepal.com",
+      link: "mailto:contact@capitalbridgenepal.com",
     },
     {
       icon: Phone,

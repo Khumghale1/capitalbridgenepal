@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, ChevronDown, Building2 } from "lucide-react";
+import { Menu, X, ChevronDown } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,10 +36,11 @@ export function Header() {
           to="/"
           className="flex items-center gap-2 transition-opacity hover:opacity-80"
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-hero">
-            <Building2 className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <span className="text-xl font-bold text-foreground">InvestNepal</span>
+          <img
+            src="/Black and Gold Modern Element Centric Business Logo.svg"
+            alt="CapitalBridgeNepal Logo"
+            className="h-26 w-26 md:h-32 md:w-35"
+          />
         </Link>
 
         {/* Desktop Navigation */}

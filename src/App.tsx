@@ -14,6 +14,12 @@ import Categories from "./pages/Categories";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import Dashboard from "./Dashboard";
+import Investments from "./Dashboard/Investments";
+import Opportunities from "./Dashboard/Opportunities";
+import Portfolio from "./Dashboard/Portfolio";
+import Analytics from "./Dashboard/Analytics";
+import Documents from "./Dashboard/Documents";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +40,12 @@ const App = () => (
           <Route path="/categories" element={<Categories />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard/investments" element={<Investments />} />
+          <Route path="/dashboard/opportunities" element={<Opportunities />} />
+          <Route path="/dashboard/portfolio" element={<Portfolio />} />
+          <Route path="/dashboard/analytics" element={<Analytics />} />
+          <Route path="/dashboard/documents" element={<Documents />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

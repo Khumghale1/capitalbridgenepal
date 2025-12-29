@@ -1,6 +1,19 @@
 import type { Business } from "@/components/business/BusinessCard";
 
 export const mockBusinesses: Business[] = [
+   {
+    id: "1",
+    name: "Vistara Nepal",
+    category: "Tech Company",
+    location: "Kathmandu",
+    tagline:
+      "Building Nepal's leading SaaS platform for small businesses with innovative cloud solutions.",
+    investmentMin: 5000000,
+    investmentMax: 20000000,
+    paidUpCapital: 10000000,
+    isVerified: true,
+    isFeatured: true,
+  },
   {
     id: "1",
     name: "TechVenture Nepal",
