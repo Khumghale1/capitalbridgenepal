@@ -1,0 +1,154 @@
+import type { Business } from "@/components/business/BusinessCard";
+
+export const mockBusinesses: Business[] = [
+  {
+    id: "1",
+    name: "TechVenture Nepal",
+    category: "Tech Company",
+    location: "Kathmandu",
+    tagline:
+      "Building Nepal's leading SaaS platform for small businesses with innovative cloud solutions.",
+    investmentMin: 5000000,
+    investmentMax: 20000000,
+    paidUpCapital: 10000000,
+    isVerified: true,
+    isFeatured: true,
+  },
+  {
+    id: "2",
+    name: "Himalayan Hydropower Ltd",
+    category: "Hydropower",
+    location: "Pokhara",
+    tagline:
+      "Developing sustainable micro-hydropower projects across rural Nepal communities.",
+    investmentMin: 50000000,
+    investmentMax: 150000000,
+    paidUpCapital: 75000000,
+    isVerified: true,
+    isFeatured: true,
+  },
+  {
+    id: "3",
+    name: "FinPay Solutions",
+    category: "Fintech",
+    location: "Lalitpur",
+    tagline:
+      "Digital payment infrastructure revolutionizing how Nepal transacts business.",
+    investmentMin: 10000000,
+    investmentMax: 50000000,
+    paidUpCapital: 25000000,
+    isVerified: true,
+    isFeatured: true,
+  },
+  {
+    id: "4",
+    name: "EduSmart Nepal",
+    category: "Edtech",
+    location: "Kathmandu",
+    tagline:
+      "Making quality education accessible through innovative digital learning platforms.",
+    investmentMin: 3000000,
+    investmentMax: 15000000,
+    paidUpCapital: 8000000,
+    isVerified: true,
+    isFeatured: false,
+  },
+  {
+    id: "5",
+    name: "Green Farms Agro",
+    category: "Agriculture",
+    location: "Butwal",
+    tagline:
+      "Organic farming and modern agricultural practices for sustainable food production.",
+    investmentMin: 20000000,
+    investmentMax: 80000000,
+    paidUpCapital: 35000000,
+    isVerified: true,
+    isFeatured: true,
+  },
+  {
+    id: "6",
+    name: "Nepal Tourism Ventures",
+    category: "Tourism & Hospitality",
+    location: "Pokhara",
+    tagline:
+      "Premium eco-tourism experiences showcasing Nepal's natural beauty to the world.",
+    investmentMin: 30000000,
+    investmentMax: 100000000,
+    paidUpCapital: 50000000,
+    isVerified: true,
+    isFeatured: false,
+  },
+  {
+    id: "7",
+    name: "MediCare Nepal",
+    category: "Healthcare",
+    location: "Kathmandu",
+    tagline:
+      "Affordable healthcare solutions with telemedicine and diagnostic services.",
+    investmentMin: 15000000,
+    investmentMax: 60000000,
+    paidUpCapital: 30000000,
+    isVerified: true,
+    isFeatured: false,
+  },
+  {
+    id: "8",
+    name: "UrbanSpace Developers",
+    category: "Real Estate",
+    location: "Bhaktapur",
+    tagline:
+      "Modern residential and commercial property development in growing urban areas.",
+    investmentMin: 100000000,
+    investmentMax: 500000000,
+    paidUpCapital: 200000000,
+    isVerified: true,
+    isFeatured: false,
+  },
+  {
+    id: "9",
+    name: "NepManu Industries",
+    category: "Manufacturing",
+    location: "Birgunj",
+    tagline:
+      "Export-quality manufacturing with focus on textiles and consumer goods.",
+    investmentMin: 40000000,
+    investmentMax: 120000000,
+    paidUpCapital: 60000000,
+    isVerified: false,
+    isFeatured: false,
+  },
+  {
+    id: "10",
+    name: "Himalayan Flavors",
+    category: "Food & Beverage",
+    location: "Kathmandu",
+    tagline:
+      "Authentic Nepali food products for domestic and international markets.",
+    investmentMin: 8000000,
+    investmentMax: 25000000,
+    paidUpCapital: 12000000,
+    isVerified: true,
+    isFeatured: false,
+  },
+];
+
+export const categories = [
+  { name: "Tech Company", count: 24, slug: "tech-company" },
+  { name: "Hydropower", count: 18, slug: "hydropower" },
+  { name: "Fintech", count: 15, slug: "fintech" },
+  { name: "Edtech", count: 12, slug: "edtech" },
+  { name: "Manufacturing", count: 31, slug: "manufacturing" },
+  { name: "Tourism & Hospitality", count: 27, slug: "tourism-hospitality" },
+  { name: "Agriculture", count: 22, slug: "agriculture" },
+  { name: "Real Estate", count: 19, slug: "real-estate" },
+  { name: "Healthcare", count: 14, slug: "healthcare" },
+  { name: "Food & Beverage", count: 16, slug: "food-beverage" },
+];
+
+export const stats = {
+  totalBusinesses: 248,
+  totalCategories: 12,
+  connectionsMade: 1250,
+  investmentFacilitated: "NPR 2.5 Billion+",
+};
