@@ -72,33 +72,6 @@ export function Header() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-
-          <Link to="/for-businesses">
-            <Button
-              variant="ghost"
-              className={isActive("/for-businesses") ? "bg-secondary" : ""}
-            >
-              For Businesses
-            </Button>
-          </Link>
-
-          <Link to="/how-it-works">
-            <Button
-              variant="ghost"
-              className={isActive("/how-it-works") ? "bg-secondary" : ""}
-            >
-              How It Works
-            </Button>
-          </Link>
-
-          <Link to="/about">
-            <Button
-              variant="ghost"
-              className={isActive("/about") ? "bg-secondary" : ""}
-            >
-              About Us
-            </Button>
-          </Link>
         </nav>
 
         {/* Right Side Actions */}
@@ -147,27 +120,6 @@ export function Header() {
               className="rounded-lg px-4 py-3 font-medium transition-colors hover:bg-secondary"
             >
               Categories
-            </Link>
-            <Link
-              to="/for-businesses"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="rounded-lg px-4 py-3 font-medium transition-colors hover:bg-secondary"
-            >
-              For Businesses
-            </Link>
-            <Link
-              to="/how-it-works"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="rounded-lg px-4 py-3 font-medium transition-colors hover:bg-secondary"
-            >
-              How It Works
-            </Link>
-            <Link
-              to="/about"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="rounded-lg px-4 py-3 font-medium transition-colors hover:bg-secondary"
-            >
-              About Us
             </Link>
             <div className="mt-2 flex flex-col gap-2 border-t border-border pt-4">
               <Link to="/Login" onClick={() => setIsMobileMenuOpen(false)}>

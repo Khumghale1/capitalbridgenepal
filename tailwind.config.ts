@@ -72,24 +72,16 @@ export default {
   				DEFAULT: 'hsl(var(--success))',
   				foreground: 'hsl(var(--success-foreground))'
   			},
-  			teal: {
-  				'50': 'hsl(var(--teal-50))',
-  				'100': 'hsl(var(--teal-100))',
-  				'500': 'hsl(var(--teal-500))',
-  				'600': 'hsl(var(--teal-600))',
-  				'700': 'hsl(var(--teal-700))'
+  			'forest-green': {
+  				DEFAULT: 'hsl(var(--forest-green))',
+  				dark: 'hsl(var(--forest-green-dark))',
+  				light: 'hsl(var(--forest-green-light))'
   			},
-  			purple: {
-  				'50': 'hsl(var(--purple-50))',
-  				'100': 'hsl(var(--purple-100))',
-  				'500': 'hsl(var(--purple-500))',
-  				'600': 'hsl(var(--purple-600))'
-  			},
-  			warm: {
-  				'50': 'hsl(var(--warm-gray-50))',
-  				'100': 'hsl(var(--warm-gray-100))',
-  				'200': 'hsl(var(--warm-gray-200))'
-  			},
+  			'mint-green': 'hsl(var(--mint-green))',
+  			cream: 'hsl(var(--cream))',
+  			charcoal: 'hsl(var(--charcoal))',
+  			'medium-gray': 'hsl(var(--medium-gray))',
+  			'light-gray': 'hsl(var(--light-gray))',
   			sidebar: {
   				DEFAULT: 'hsl(var(--sidebar-background))',
   				foreground: 'hsl(var(--sidebar-foreground))',

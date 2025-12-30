@@ -11,8 +11,6 @@ import {
 
 const footerLinks = {
   company: [
-    { label: "About Us", href: "/about" },
-    { label: "How It Works", href: "/how-it-works" },
     { label: "Contact Us", href: "/contact" },
     { label: "Careers", href: "/careers" },
   ],
@@ -21,12 +19,6 @@ const footerLinks = {
     { label: "Categories", href: "/categories" },
     { label: "Success Stories", href: "/success-stories" },
     { label: "Investment Guide", href: "/guide" },
-  ],
-  forBusinesses: [
-    { label: "List Your Business", href: "/register" },
-    { label: "Pricing", href: "/for-businesses#pricing" },
-    { label: "Business Login", href: "/business/login" },
-    { label: "FAQ", href: "/faq" },
   ],
   legal: [
     { label: "Terms & Conditions", href: "/terms" },
@@ -46,7 +38,7 @@ export function Footer() {
   return (
     <footer className="border-t border-border bg-secondary/30">
       <div className="container py-12 md:py-16">
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           {/* Brand Column */}
           <div className="lg:col-span-2">
             <Link to="/" className="mb-4 flex items-center gap-2">
@@ -99,24 +91,6 @@ export function Footer() {
             </h4>
             <ul className="space-y-3">
               {footerLinks.forInvestors.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    to={link.href}
-                    className="text-sm text-muted-foreground transition-colors hover:text-primary"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="mb-4 font-semibold text-foreground">
-              For Businesses
-            </h4>
-            <ul className="space-y-3">
-              {footerLinks.forBusinesses.map((link) => (
                 <li key={link.href}>
                   <Link
                     to={link.href}

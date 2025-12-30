@@ -157,6 +157,8 @@ export const categories = [
   { name: "Real Estate", count: 19, slug: "real-estate" },
   { name: "Healthcare", count: 14, slug: "healthcare" },
   { name: "Food & Beverage", count: 16, slug: "food-beverage" },
+  { name: "Retail", count: 8, slug: "retail" },
+  { name: "Others", count: 5, slug: "others" },
 ];
 
 export const stats = {
