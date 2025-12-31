@@ -239,7 +239,7 @@ export default function Businesses() {
 
               {/* Business Grid */}
               {filteredBusinesses.length > 0 ? (
-                <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-2">
                   {filteredBusinesses.map((business) => (
                     <BusinessCard key={business.id} business={business} />
                   ))}

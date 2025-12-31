@@ -31,9 +31,9 @@ export function DashboardSidebar() {
       <div className="flex h-16 items-center px-6 border-b">
         <Link to="/" className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-lg">CB</span>
+            <span className="text-primary-foreground font-bold text-lg">AQ</span>
           </div>
-          <span className="font-bold text-lg">CapitalBridgeNepal</span>
+          <span className="font-bold text-lg">Aarthi<span className="text-green-600">Q</span></span>
         </Link>
       </div>
 

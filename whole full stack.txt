@@ -1,0 +1,763 @@
+Capital Bridge Nepal - System Flowchart & User Flows
+📊 PART 1: HIGH-LEVEL SYSTEM FLOWCHART
+Overall System Architecture
+┌─────────────────────────────────────────────────────────────────┐
+│                    CAPITAL BRIDGE NEPAL PLATFORM                 │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+        ┌─────────────────────┼─────────────────────┐
+        ↓                     ↓                     ↓
+   ┌─────────┐         ┌─────────┐          ┌─────────┐
+   │ PUBLIC  │         │BUSINESS │          │  ADMIN  │
+   │  SIDE   │         │  SIDE   │          │  PANEL  │
+   └─────────┘         └─────────┘          └─────────┘
+        ↓                     ↓                     ↓
+   ┌─────────┐         ┌─────────┐          ┌─────────┐
+   │Homepage │         │Register │          │Dashboard│
+   │Browse   │         │Login    │          │Approve  │
+   │Business │         │Dashboard│          │Manage   │
+   │Detail   │         │Edit     │          │Monitor  │
+   │Interest │         │Inquiries│          │Reports  │
+   └─────────┘         └─────────┘          └─────────┘
+        ↓                     ↓                     ↓
+        └─────────────────────┴─────────────────────┘
+                              ↓
+                    ┌──────────────────┐
+                    │   BACKEND API    │
+                    │   Node.js        │
+                    └──────────────────┘
+                              ↓
+                    ┌──────────────────┐
+                    │   PostgreSQL     │
+                    │   Database       │
+                    └──────────────────┘
+                              ↓
+                    ┌──────────────────┐
+                    │  File Storage    │
+                    │  (Images/PDFs)   │
+                    └──────────────────┘
+🔄 PART 2: USER FLOW DIAGRAMS
+2.1 INVESTOR USER FLOW
+START: User lands on homepage
+        ↓
+┌───────────────────┐
+│  VIEW HOMEPAGE    │
+│  - Hero section   │
+│  - All businesses │
+│  - Sectors        │
+└───────────────────┘
+        ↓
+        ├─────→ [Browse Businesses Page]
+        │              ↓
+        │       ┌──────────────┐
+        │       │ Apply filters│
+        │       │ Search/Sort  │
+        │       └──────────────┘
+        │              ↓
+        └──────→ [Click on Business Card]
+                       ↓
+              ┌────────────────────┐
+              │ BUSINESS DETAIL    │
+              │ - View parameters  │
+              │ - Read about       │
+              │ - Check materials  │
+              └────────────────────┘
+                       ↓
+                ┌──────┴──────┐
+                ↓             ↓
+         [Not Interested]  [Interested]
+                              ↓
+                     ┌─────────────────┐
+                     │ FILL INTEREST   │
+                     │ FORM            │
+                     │ - Name          │
+                     │ - Email         │
+                     │ - Phone         │
+                     │ - Message       │
+                     └─────────────────┘
+                              ↓
+                     ┌─────────────────┐
+                     │ SUBMIT INTEREST │
+                     └─────────────────┘
+                              ↓
+                     ┌─────────────────┐
+                     │ SUCCESS MESSAGE │
+                     │ Reference ID    │
+                     └─────────────────┘
+                              ↓
+                     [Wait for Business to Contact]
+                              ↓
+                           END
+2.2 BUSINESS USER FLOW
+START: Business wants to list
+        ↓
+┌───────────────────────┐
+│ HOMEPAGE              │
+│ Click "List Business" │
+└───────────────────────┘
+        ↓
+┌───────────────────────┐
+│ MODAL FORM OPENS      │
+│ - Business name       │
+│ - Email               │
+│ - Phone               │
+│ - Message (optional)  │
+└───────────────────────┘
+        ↓
+┌───────────────────────┐
+│ SUBMIT INQUIRY        │
+└───────────────────────┘
+        ↓
+┌───────────────────────┐
+│ SUCCESS MESSAGE       │
+│ "Team will contact"   │
+└───────────────────────┘
+        ↓
+┌───────────────────────┐
+│ ADMIN REVIEWS         │
+│ (Backend Process)     │
+└───────────────────────┘
+        ↓
+   ┌────┴────┐
+   ↓         ↓
+[Rejected] [Approved]
+   ↓         ↓
+  END   [Admin sends email with registration link]
+             ↓
+┌──────────────────────────┐
+│ CLICK REGISTRATION LINK  │
+│ (Unique URL with token)  │
+└──────────────────────────┘
+        ↓
+┌──────────────────────────┐
+│ FULL REGISTRATION FORM   │
+│ Step 1: Create account   │
+│ Step 2: Basic info       │
+│ Step 3: Investment       │
+│ Step 4: About content    │
+│ Step 5: Upload files     │
+│ Step 6: Contact info     │
+│ Step 7: Documents        │
+│ Step 8: Review & submit  │
+└──────────────────────────┘
+        ↓
+┌──────────────────────────┐
+│ SUBMIT REGISTRATION      │
+└──────────────────────────┘
+        ↓
+┌──────────────────────────┐
+│ SUCCESS PAGE             │
+│ - Registration ID        │
+│ - Status: Pending        │
+│ - Login credentials      │
+└──────────────────────────┘
+        ↓
+┌──────────────────────────┐
+│ ADMIN APPROVAL PROCESS   │
+│ (Wait 2-3 days)          │
+└──────────────────────────┘
+        ↓
+   ┌────┴────┐
+   ↓         ↓
+[Rejected] [Approved]
+   ↓         ↓
+[Email]   [Email: "You're live!"]
+   ↓         ↓
+  END        ↓
+      ┌──────────────────┐
+      │ LOGIN TO         │
+      │ BUSINESS         │
+      │ DASHBOARD        │
+      └──────────────────┘
+             ↓
+      ┌──────────────────┐
+      │ DASHBOARD MENU   │
+      │ - View profile   │
+      │ - Edit profile   │
+      │ - View inquiries │
+      │ - Manage media   │
+      │ - Analytics      │
+      │ - Settings       │
+      └──────────────────┘
+             ↓
+          [Active Business on Platform]
+             ↓
+            END
+2.3 ADMIN USER FLOW
+
+START: Admin logs in
+        ↓
+┌──────────────────────┐
+│ ADMIN LOGIN PAGE     │
+│ - Username           │
+│ - Password           │
+└──────────────────────┘
+        ↓
+┌──────────────────────┐
+│ ADMIN DASHBOARD      │
+│ - Total businesses   │
+│ - Pending approvals  │
+│ - New inquiries      │
+│ - Interest stats     │
+└──────────────────────┘
+        ↓
+        ├─────→ [Manage New Inquiries]
+        │              ↓
+        │       ┌──────────────────┐
+        │       │ View inquiry     │
+        │       │ Contact business │
+        │       │ Send reg link    │
+        │       └──────────────────┘
+        │
+        ├─────→ [Pending Approvals]
+        │              ↓
+        │       ┌──────────────────┐
+        │       │ Review business  │
+        │       │ Check documents  │
+        │       │ Verify info      │
+        │       └──────────────────┘
+        │              ↓
+        │         ┌────┴────┐
+        │         ↓         ↓
+        │    [Approve]  [Reject]
+        │         ↓         ↓
+        │    [Email]   [Email with reason]
+        │         ↓         ↓
+        │    [Business goes live]  [Business can edit]
+        │
+        ├─────→ [Manage Active Businesses]
+        │              ↓
+        │       ┌──────────────────┐
+        │       │ View/Edit        │
+        │       │ Deactivate       │
+        │       │ Delete           │
+        │       └──────────────────┘
+        │
+        ├─────→ [Removal Requests]
+        │              ↓
+        │       ┌──────────────────┐
+        │       │ Review request   │
+        │       │ Approve/Deny     │
+        │       └──────────────────┘
+        │
+        └─────→ [View All Inquiries]
+                       ↓
+                ┌──────────────────┐
+                │ Monitor activity │
+                │ Export data      │
+                └──────────────────┘
+                       ↓
+                    [Logout]
+                       ↓
+                      END
+
+🔄 PART 3: KEY PROCESS FLOWCHARTS
+3.1 Business Registration Process Flow
+┌─────────────────┐
+│ User clicks     │
+│ "List Business" │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ Modal form      │
+│ (3 fields)      │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ Submit inquiry  │
+│ Save to DB      │
+└────────┬────────┘
+         ↓
+    ┌────┴────┐
+    ↓         ↓
+[Email to   [Email to
+ Admin]      Business]
+    ↓         ↓
+┌─────────────────┐
+│ Admin reviews   │
+│ in dashboard    │
+└────────┬────────┘
+         ↓
+    ┌────┴────┐
+    ↓         ↓
+[Not Qualified]  [Qualified]
+    ↓              ↓
+   END    ┌───────────────┐
+          │ Admin sends   │
+          │ unique link   │
+          └───────┬───────┘
+                  ↓
+          ┌───────────────┐
+          │ Business      │
+          │ clicks link   │
+          └───────┬───────┘
+                  ↓
+          ┌───────────────┐
+          │ Validate      │
+          │ token         │
+          └───────┬───────┘
+                  ↓
+            ┌─────┴─────┐
+            ↓           ↓
+      [Token       [Token valid]
+       expired]          ↓
+            ↓     ┌─────────────┐
+          [Show   │ Show full   │
+           error] │ reg form    │
+            ↓     └──────┬──────┘
+           END           ↓
+                  ┌─────────────┐
+                  │ Business    │
+                  │ fills form  │
+                  └──────┬──────┘
+                         ↓
+                  ┌─────────────┐
+                  │ Submit      │
+                  │ Status:     │
+                  │ Pending     │
+                  └──────┬──────┘
+                         ↓
+                  ┌─────────────┐
+                  │ Admin       │
+                  │ reviews     │
+                  └──────┬──────┘
+                         ↓
+                    ┌────┴────┐
+                    ↓         ↓
+              [Approve]    [Reject]
+                    ↓         ↓
+              [Status:    [Status:
+               Active]     Rejected]
+                    ↓         ↓
+              [Business   [Email with
+               goes live]  reason]
+                    ↓         ↓
+                   END       END
+3.2 Interest Submission Process Flow
+┌─────────────────┐
+│ User on         │
+│ business detail │
+│ page            │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ Sees interest   │
+│ form (sidebar)  │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ Fills form:     │
+│ - Name          │
+│ - Email         │
+│ - Phone         │
+│ - Message       │
+│ - T&C checkbox  │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ Validate form   │
+└────────┬────────┘
+         ↓
+    ┌────┴────┐
+    ↓         ↓
+[Errors]   [Valid]
+    ↓         ↓
+[Show       ┌─────────────┐
+ errors]    │ Submit to   │
+    ↓       │ backend     │
+  [Retry]   └──────┬──────┘
+             ↓
+       ┌─────────────┐
+       │ Save to DB  │
+       │ Generate ID │
+       └──────┬──────┘
+              ↓
+         ┌────┴────┐
+         ↓         ↓
+    [Email to   [Email to
+     Business]   Investor]
+         ↓         ↓
+    ┌─────────────────┐
+    │ Show success    │
+    │ message to user │
+    │ Reference ID    │
+    └────────┬────────┘
+             ↓
+            END
+             
+[Business sees inquiry in dashboard]
+             ↓
+    ┌─────────────────┐
+    │ Business        │
+    │ contacts        │
+    │ investor        │
+    └────────┬────────┘
+             ↓
+            END
+
+3.3 Business Dashboard - Edit Profile Flow
+┌─────────────────┐
+│ Business logs   │
+│ into dashboard  │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ Navigate to     │
+│ "My Profile"    │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ View current    │
+│ profile data    │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ Click "Edit"    │
+│ button          │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ Edit form       │
+│ appears with    │
+│ pre-filled data │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ Modify fields   │
+│ (any section)   │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ Click "Save"    │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ Validate data   │
+└────────┬────────┘
+         ↓
+    ┌────┴────┐
+    ↓         ↓
+[Errors]   [Valid]
+    ↓         ↓
+[Show       ┌─────────────┐
+ errors]    │ Update DB   │
+    ↓       └──────┬──────┘
+  [Retry]          ↓
+            ┌─────────────┐
+            │ Success     │
+            │ message     │
+            └──────┬──────┘
+                   ↓
+            ┌─────────────┐
+            │ Changes     │
+            │ live on     │
+            │ public page │
+            └──────┬──────┘
+                   ↓
+                  END
+3.4 Admin Approval Workflow
+┌─────────────────┐
+│ New business    │
+│ registration    │
+│ submitted       │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ Appears in      │
+│ "Pending        │
+│ Approvals"      │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ Admin clicks    │
+│ "Review"        │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ Admin sees:     │
+│ - All details   │
+│ - Documents     │
+│ - Uploads       │
+└────────┬────────┘
+         ↓
+┌─────────────────┐
+│ Admin reviews   │
+│ checklist       │
+└────────┬────────┘
+         ↓
+    ┌────┴────┐
+    ↓         ↓
+[Approve]  [Reject]
+    ↓         ↓
+┌─────────┐ ┌─────────┐
+│ Status  │ │ Status  │
+│ =Active │ │=Rejected│
+└────┬────┘ └────┬────┘
+     ↓           ↓
+┌─────────┐ ┌─────────┐
+│ Business│ │ Enter   │
+│ goes    │ │ rejection│
+│ live    │ │ reason  │
+└────┬────┘ └────┬────┘
+     ↓           ↓
+┌─────────┐ ┌─────────┐
+│ Send    │ │ Send    │
+│ approval│ │rejection│
+│ email   │ │ email   │
+└────┬────┘ └────┬────┘
+     ↓           ↓
+┌─────────┐ ┌─────────┐
+│ Business│ │ Business│
+│ can     │ │ can edit│
+│ login   │ │& resubmit│
+└────┬────┘ └────┬────┘
+     ↓           ↓
+    END         END
+📱 PART 4: PAGE NAVIGATION MAP
+PUBLIC WEBSITE
+├── Homepage (/)
+│   ├── Hero Section
+│   ├── All Businesses (scrollable)
+│   ├── Explore Sectors
+│   ├── CTA Section
+│   └── "List Business" Modal
+│
+├── Browse Businesses (/businesses)
+│   ├── Filter Sidebar
+│   ├── Search Bar
+│   ├── Business Grid (2 columns)
+│   └── Pagination
+│
+├── Business Detail (/businesses/:id)
+│   ├── Header
+│   ├── Investment Parameters (expandable)
+│   ├── About Section
+│   ├── Materials & Media (tabs)
+│   ├── Contact Info
+│   ├── Quick Info (sidebar)
+│   └── Interest Form (sidebar)
+│
+
+
+Different URL for login
+BUSINESS DASHBOARD
+├── Login (/business/login)
+└── Dashboard (/business/dashboard)
+    ├── Overview
+    ├── My Profile
+    │   └── Edit Profile
+    ├── Investment Inquiries
+    ├── Materials & Media
+    │   └── Upload/Manage
+    ├── Analytics (basic)
+    └── Settings
+        ├── Change Password
+        ├── Notifications
+        └── Request Removal
+
+Different URL for login of admin also 
+ADMIN PANEL
+├── Login (/admin/login)
+└── Dashboard (/admin/dashboard)
+    ├── Overview Stats
+    ├── Business Inquiries (new leads)
+    │   └── Send Registration Link
+    ├── Pending Approvals
+    │   └── Review & Approve/Reject
+    ├── Active Businesses
+    │   └── Manage/Edit/Deactivate
+    ├── Removal Requests
+    ├── All Interest Submissions
+    ├── Sector Management
+    └── Admin Users
+🗄️ PART 5: DATABASE ENTITY RELATIONSHIP
+┌──────────────┐
+│  businesses  │ ◄─┐
+├──────────────┤   │
+│ id (PK)      │   │
+│ username     │   │
+│ email        │   │
+│ ...details   │   │
+│ status       │   │
+└──────────────┘   │
+       │           │
+       │ 1:N       │
+       ↓           │
+┌──────────────┐   │
+│business_media│   │
+├──────────────┤   │
+│ id (PK)      │   │
+│ business_id ─┼───┘
+│ file_url     │
+│ media_type   │
+└──────────────┘
+
+┌──────────────┐
+│  businesses  │ ◄─┐
+└──────────────┘   │
+       │ 1:N       │
+       ↓           │
+┌──────────────┐   │
+│  interest_   │   │
+│ submissions  │   │
+├──────────────┤   │
+│ id (PK)      │   │
+│ business_id ─┼───┘
+│ investor_name│
+│ email        │
+│ phone        │
+└──────────────┘
+
+┌──────────────┐
+│  categories  │
+├──────────────┤
+│ id (PK)      │
+│ name         │
+│ slug         │
+└──────────────┘
+       ↑
+       │ N:1
+       │
+┌──────────────┐
+│  businesses  │
+│ category_id  │
+└──────────────┘
+
+┌──────────────┐
+│   business_  │
+│  inquiries   │
+├──────────────┤
+│ id (PK)      │
+│ business_name│
+│ email        │
+│ status       │
+│ token        │
+└──────────────┘
+
+┌──────────────┐
+│   removal_   │
+│  requests    │
+├──────────────┤
+│ id (PK)      │
+│ business_id  │
+│ reason       │
+│ status       │
+└──────────────┘
+
+┌──────────────┐
+│    admins    │
+├──────────────┤
+│ id (PK)      │
+│ username     │
+│ password_hash│
+│ role         │
+└──────────────┘
+🎯 PART 6: KEY USER ACTIONS SUMMARY
+Investor Actions:
+
+Browse businesses (filter, search, sort)
+View business details
+Submit interest form
+Receive confirmation
+
+Business Actions:
+
+Submit initial inquiry (homepage modal)
+Receive registration link (email)
+Complete full registration
+Wait for approval
+Login to dashboard
+Edit profile
+View investor inquiries
+Upload/manage media
+Request removal
+
+Admin Actions:
+
+Login to admin panel
+Review new inquiries → Send registration links
+Review pending registrations → Approve/Reject
+Manage active businesses
+Handle removal requests
+Monitor platform activity
+Export data/reports
+📊 PART 7: DATA FLOW DIAGRAM
+┌──────────┐
+│ INVESTOR │
+└────┬─────┘
+     │
+     ↓ (browses)
+┌──────────┐
+│ FRONTEND │
+└────┬─────┘
+     │
+     ↓ (API call)
+┌──────────┐
+│ BACKEND  │
+│ (Node.js)│
+└────┬─────┘
+     │
+     ↓ (query)
+┌──────────┐
+│ DATABASE │
+│(PostgreSQL)
+└────┬─────┘
+     │
+     ↓ (return data)
+┌──────────┐
+│ BACKEND  │
+└────┬─────┘
+     │
+     ↓ (send JSON)
+┌──────────┐
+│ FRONTEND │
+└────┬─────┘
+     │
+     ↓ (display)
+┌──────────┐
+│ INVESTOR │
+└──────────┘
+
+[Same flow for Business & Admin users]
+✅ DEVELOPER QUICK REFERENCE
+Must Implement Flows:
+
+✅ Homepage → Browse → Detail → Interest (Investor)
+✅ Homepage Modal → Admin Review → Registration Link → Full Form → Approval (Business)
+✅ Business Login → Dashboard → Edit Profile (Business)
+✅ Admin Login → Inquiries → Approvals → Management (Admin)
+
+Key Validations:
+
+Email format
+Phone format (Nepal)
+File size limits
+Token expiry (7 days)
+Form required fields
+
+Key Notifications:
+
+Business inquiry submitted → Admin email
+Registration link sent → Business email
+Registration submitted → Admin email
+Business approved → Business email
+Interest submitted → Business & Investor emails
+
+
+This flowchart provides developers with clear understanding of:
+
+User journeys
+Page flows
+Data flows
+Database relationships
+Process logic
+Navigation structure
+
+Developers can reference this for:
+
+Frontend page development
+Backend API endpoints
+Database schema
+Email triggers
+Validation rules
+User permissions

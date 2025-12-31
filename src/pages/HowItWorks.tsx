@@ -122,7 +122,7 @@ export default function HowItWorks() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-teal-100/40 via-transparent to-purple-100/30" />
         <div className="container relative text-center">
           <h1 className="animate-fade-up mb-6 text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
-            How <span className="text-gradient">CapitalBridgeNepal</span> Works
+            How <span className="text-gradient">Aarthi<span className="text-green-600">Q</span></span> Works
           </h1>
           <p
             className="animate-fade-up mx-auto max-w-2xl text-lg text-muted-foreground md:text-xl"

@@ -21,7 +21,7 @@ export default function Login() {
     e.preventDefault();
     toast({
       title: "Login Successful!",
-      description: "Welcome back to CapitalBridgeNepal.",
+      description: "Welcome back to AarthiQ.",
     });
     console.log({ email, password, rememberMe });
 

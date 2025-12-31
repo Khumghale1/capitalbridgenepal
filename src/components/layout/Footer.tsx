@@ -43,8 +43,8 @@ export function Footer() {
           <div className="lg:col-span-2">
             <Link to="/" className="mb-4 flex items-center gap-2">
               <img
-                src="/Black and Gold Modern Element Centric Business Logo.svg"
-                alt="CapitalBridgeNepal Logo"
+                src="/images/mainlogo.png"
+                alt="AarthiQ Logo"
                 className="h-26 w-26 md:h-32 md:w-35"
               />
             </Link>
@@ -55,7 +55,7 @@ export function Footer() {
             <div className="space-y-3 text-sm text-muted-foreground">
               <div className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-primary" />
-                <span>contact@capitalbridgenepal.com</span>
+                <span>contact@aarthiq.com</span>
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-primary" />
@@ -107,7 +107,7 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 md:flex-row">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} CapitalBridgeNepal. All rights reserved.
+            © {new Date().getFullYear()} Aarthi<span className="text-green-600">Q</span>. All rights reserved.
           </p>
 
           <div className="flex items-center gap-2">

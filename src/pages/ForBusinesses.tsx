@@ -383,7 +383,7 @@ export default function ForBusinesses() {
             </h2>
             <p className="mx-auto mb-8 max-w-2xl text-primary-foreground/90">
               Join the growing list of businesses connecting with investors on
-              CapitalBridgeNepal. Your next investor is just a click away.
+              AarthiQ. Your next investor is just a click away.
             </p>
             <Link to="/register">
               <Button

@@ -119,8 +119,6 @@ export default function Index() {
         </div>
       </section>
 
-
-
       {/* Search Bar Section */}
       <section className="border-b border-border bg-card py-6">
         <div className="container">
@@ -225,7 +223,6 @@ export default function Index() {
           </div>
         </div>
       </section>
-
 
       {/* CTA Section */}
       <section className="py-16 md:py-24">
