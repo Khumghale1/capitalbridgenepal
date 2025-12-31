@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { BusinessCard } from "@/components/business/BusinessCard";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 
 export default function Businesses() {
+  const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("newest");
@@ -25,6 +27,20 @@ export default function Businesses() {
   });
 
   const locations = ["Kathmandu", "Lalitpur", "Bhaktapur", "Pokhara", "Butwal", "Birgunj"];
+
+  // Read URL parameters and set initial state
+  useEffect(() => {
+    const query = searchParams.get("q");
+    const category = searchParams.get("category");
+
+    if (query) {
+      setSearchQuery(query);
+    }
+
+    if (category) {
+      setSelectedCategories([category]);
+    }
+  }, [searchParams]);
 
   const toggleCategory = (category: string) => {
     setSelectedCategories((prev) =>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X } from "lucide-react";
 
@@ -7,9 +7,7 @@ import { Menu, X } from "lucide-react";
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const location = useLocation();
 
-  const isActive = (path: string) => location.pathname === path;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80">
@@ -44,7 +42,7 @@ export function Header() {
         <div className="absolute right-0 hidden lg:block">
           <Link to="/Login">
             <Button className="bg-primary text-primary-foreground hover:bg-accent" size="default">
-              Login
+               Business Login
             </Button>
           </Link>
         </div>
@@ -85,7 +83,7 @@ export function Header() {
             <div className="mt-2 border-t border-border pt-4">
               <Link to="/Login" onClick={() => setIsMobileMenuOpen(false)}>
                 <Button className="w-full bg-primary text-primary-foreground hover:bg-accent">
-                  Login
+                 Business Login
                 </Button>
               </Link>
             </div>

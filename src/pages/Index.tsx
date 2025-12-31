@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { BusinessCard } from "@/components/business/BusinessCard";
@@ -49,8 +49,14 @@ const categoryIcons: Record<string, any> = {
 };
 
 export default function Index() {
+  const navigate = useNavigate();
+
   // Show all businesses on home page
   const allBusinesses = mockBusinesses;
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
 
   // Modal state for List Your Business form
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -70,6 +76,13 @@ export default function Index() {
       setIsModalOpen(false);
       setFormData({ businessName: "", email: "", phone: "" });
     }, 3000);
+  };
+
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.append("q", searchQuery);
+    if (selectedCategory) params.append("category", selectedCategory);
+    navigate(`/businesses?${params.toString()}`);
   };
 
   return (
@@ -130,18 +143,25 @@ export default function Index() {
               <input
                 type="text"
                 placeholder="Search businesses by name or keyword..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 className="h-12 w-full rounded-lg border border-input bg-background pl-12 pr-4 text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               />
             </div>
-            <select className="h-12 rounded-lg border border-input bg-background px-4 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="h-12 rounded-lg border border-input bg-background px-4 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            >
               <option value="">All Categories</option>
               {categories.map((cat) => (
-                <option key={cat.slug} value={cat.slug}>
+                <option key={cat.slug} value={cat.name}>
                   {cat.name}
                 </option>
               ))}
             </select>
-            <Button variant="default" size="lg">
+            <Button variant="default" size="lg" onClick={handleSearch}>
               <Search className="h-4 w-4" />
               Search
             </Button>
