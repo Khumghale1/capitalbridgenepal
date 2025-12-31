@@ -107,11 +107,13 @@ export default function Index() {
                   <ArrowRight className="h-5 w-5" />
                 </Button>
               </Link>
-              <Link to="/register">
-                <Button variant="hero-outline" size="xl">
-                  List Your Business
-                </Button>
-              </Link>
+              <Button
+                onClick={() => setIsModalOpen(true)}
+                variant="hero-outline"
+                size="xl"
+              >
+                List Your Business
+              </Button>
             </div>
           </div>
 

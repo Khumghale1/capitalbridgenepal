@@ -28,15 +28,26 @@ export function Header() {
 
         {/* Desktop Navigation - Centered */}
         <nav className="hidden items-center gap-1 lg:flex">
+          <Link to="/">
+            <Button variant="ghost">
+              Home
+            </Button>
+          </Link>
           <Link to="/businesses">
-            <Button
-              variant="ghost"
-              className={isActive("/businesses") ? "bg-secondary" : ""}
-            >
+            <Button variant="ghost">
               Browse Businesses
             </Button>
           </Link>
         </nav>
+
+        {/* Login Button - Desktop */}
+        <div className="absolute right-0 hidden lg:block">
+          <Link to="/Login">
+            <Button className="bg-primary text-primary-foreground hover:bg-accent" size="default">
+              Login
+            </Button>
+          </Link>
+        </div>
 
         {/* Mobile Menu Button */}
         <Button
@@ -58,12 +69,26 @@ export function Header() {
         <div className="animate-fade-in border-t border-border bg-background lg:hidden">
           <nav className="container flex flex-col gap-2 py-4">
             <Link
+              to="/"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="rounded-lg px-4 py-3 font-medium transition-colors hover:bg-secondary"
+            >
+              Home
+            </Link>
+            <Link
               to="/businesses"
               onClick={() => setIsMobileMenuOpen(false)}
               className="rounded-lg px-4 py-3 font-medium transition-colors hover:bg-secondary"
             >
               Browse Businesses
             </Link>
+            <div className="mt-2 border-t border-border pt-4">
+              <Link to="/Login" onClick={() => setIsMobileMenuOpen(false)}>
+                <Button className="w-full bg-primary text-primary-foreground hover:bg-accent">
+                  Login
+                </Button>
+              </Link>
+            </div>
           </nav>
         </div>
       )}
