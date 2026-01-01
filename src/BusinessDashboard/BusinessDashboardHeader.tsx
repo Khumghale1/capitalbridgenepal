@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export function DashboardHeader() {
+export function BusinessDashboardHeader() {
   return (
     <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center gap-4 px-6 lg:ml-64">
@@ -21,7 +21,7 @@ export function DashboardHeader() {
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search investments, businesses..."
+              placeholder="Search inquiries, materials..."
               className="pl-10"
             />
           </div>
@@ -40,28 +40,26 @@ export function DashboardHeader() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                 <Avatar>
-                  <AvatarImage src="" alt="User" />
-                  <AvatarFallback>UN</AvatarFallback>
+                  <AvatarImage src="" alt="Business" />
+                  <AvatarFallback>BN</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">User Name</p>
+                  <p className="text-sm font-medium leading-none">Business Name</p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    user@example.com
+                    business@example.com
                   </p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>Profile</DropdownMenuItem>
               <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuItem>Billing</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => {
-                  // TODO: Add logout logic
                   window.location.href = "/";
                 }}
               >

@@ -1,22 +1,22 @@
 import { ReactNode } from "react";
-import { DashboardSidebar } from "./DashboardSidebar";
-import { DashboardHeader } from "./DashboardHeader";
+import { BusinessDashboardSidebar } from "./BusinessDashboardSidebar";
+import { BusinessDashboardHeader } from "./BusinessDashboardHeader";
 
-interface DashboardLayoutProps {
+interface BusinessDashboardLayoutProps {
   children: ReactNode;
 }
 
-export function DashboardLayout({ children }: DashboardLayoutProps) {
+export function BusinessDashboardLayout({ children }: BusinessDashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       <div className="flex">
         {/* Sidebar */}
-        <DashboardSidebar />
+        <BusinessDashboardSidebar />
 
         {/* Main Content */}
         <div className="flex-1">
           {/* Header */}
-          <DashboardHeader />
+          <BusinessDashboardHeader />
 
           {/* Page Content */}
           <main className="container py-6">

@@ -1,9 +1,8 @@
 import { Link } from "react-router-dom";
-import { LucideIcon } from "lucide-react";
 
 interface CategoryCardProps {
   name: string;
-  icon: LucideIcon;
+  icon: React.ComponentType<{ className?: string }>;
   count: number;
   href: string;
 }

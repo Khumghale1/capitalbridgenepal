@@ -8,25 +8,31 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { Mail, Lock, ArrowRight } from "lucide-react";
 
 export default function Login() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Set authentication state
+    login("business");
+
     toast({
       title: "Login Successful!",
       description: "Welcome back to AarthiQ.",
     });
     console.log({ email, password, rememberMe });
 
-    // Redirect to dashboard
-    navigate("/dashboard");
+    // Redirect to business dashboard
+    navigate("/business/dashboard");
   };
 
   return (

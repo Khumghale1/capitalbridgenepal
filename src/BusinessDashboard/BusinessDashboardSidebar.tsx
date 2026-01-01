@@ -1,29 +1,30 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
-  Building2,
-  Wallet,
+  User,
+  MessageSquare,
+  FolderOpen,
   BarChart3,
   Settings,
   LogOut,
-  TrendingUp,
-  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navigation = [
-  { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Investments", href: "/dashboard/investments", icon: Wallet },
-  { name: "Opportunities", href: "/dashboard/opportunities", icon: Building2 },
-  { name: "Portfolio", href: "/dashboard/portfolio", icon: TrendingUp },
-  { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
-  { name: "Documents", href: "/dashboard/documents", icon: FileText },
+  { name: "Overview", href: "/business/dashboard", icon: LayoutDashboard },
+  { name: "My Profile", href: "/business/dashboard/profile", icon: User },
+  { name: "Investment Inquiries", href: "/business/dashboard/inquiries", icon: MessageSquare },
+  { name: "Materials & Media", href: "/business/dashboard/materials", icon: FolderOpen },
+  { name: "Analytics", href: "/business/dashboard/analytics", icon: BarChart3 },
 ];
 
-export function DashboardSidebar() {
+export function BusinessDashboardSidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
 
   return (
     <div className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 border-r bg-card">
@@ -62,7 +63,7 @@ export function DashboardSidebar() {
       {/* Bottom Section */}
       <div className="p-4 space-y-2">
         <Separator className="mb-4" />
-        <Link to="/dashboard/settings">
+        <Link to="/business/dashboard/settings">
           <Button
             variant="ghost"
             className="w-full justify-start gap-3 text-muted-foreground"
@@ -75,8 +76,8 @@ export function DashboardSidebar() {
           variant="ghost"
           className="w-full justify-start gap-3 text-muted-foreground"
           onClick={() => {
-            // TODO: Add logout logic
-            window.location.href = "/";
+            logout();
+            navigate("/");
           }}
         >
           <LogOut className="h-5 w-5" />

@@ -40,7 +40,7 @@ export function Header() {
 
         {/* Login Button - Desktop */}
         <div className="absolute right-0 hidden lg:block">
-          <Link to="/Login">
+          <Link to="/business/login">
             <Button className="bg-primary text-primary-foreground hover:bg-accent" size="default">
                Business Login
             </Button>
