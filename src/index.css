@@ -6,8 +6,8 @@
 
 @layer base {
   :root {
-    /* Primary: Warm Cream/Beige background */
-    --background: 39 41% 93%;
+    /* Primary: Pure White background */
+    --background: 0 0% 100%;
     /* Body text: Dark Navy/Charcoal */
     --foreground: 210 29% 24%;
 
@@ -50,7 +50,7 @@
     --forest-green-light: 149 42% 50%;
 
     --mint-green: 122 39% 93%; /* #E8F5E9 */
-    --cream: 39 41% 93%; /* #F5F1E8 */
+    --cream: 0 0% 100%; /* Pure White */
     --charcoal: 210 29% 24%; /* #2C3E50 */
     --medium-gray: 0 0% 40%; /* #666666 */
     --light-gray: 0 0% 97%; /* #F8F8F8 */
@@ -59,7 +59,7 @@
     --success-foreground: 0 0% 100%;
 
     --gradient-hero: linear-gradient(135deg, hsl(149 42% 39%) 0%, hsl(149 41% 30%) 100%);
-    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(39 41% 93%) 100%);
+    --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(0 0% 100%) 100%);
     --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(122 39% 98%) 100%);
 
     --shadow-sm: 0 1px 2px 0 hsl(210 29% 24% / 0.05);

@@ -88,7 +88,7 @@ export default function Index() {
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-subtle py-16 md:py-24 lg:py-32">
+      <section className="relative overflow-hidden bg-gradient-subtle min-h-screen flex items-center">
         {/* Background Image */}
         <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15"
@@ -99,7 +99,7 @@ export default function Index() {
           }}
         />
 
-        <div className="container relative">
+        <div className="container relative py-16">
           <div className="mx-auto max-w-4xl text-center">
             <h1 className="animate-fade-up mb-6 text-4xl font-extrabold tracking-tight text-foreground md:text-5xl lg:text-6xl">
               Unlock Early Access to High-Growth Companies Before They Go Public
