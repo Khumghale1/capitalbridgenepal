@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, TrendingUp, Building2, ArrowRight } from "lucide-react";
@@ -6,15 +5,19 @@ import { MapPin, TrendingUp, Building2, ArrowRight } from "lucide-react";
 export interface Business {
   id: string;
   name: string;
-  logo?: string;
-  category: string;
+  logoUrl?: string;
+  category: {
+    id: number;
+    name: string;
+    slug: string;
+  };
   location: string;
-  tagline: string;
-  investmentMin: number;
-  investmentMax: number;
+  briefDescription: string;
+  investmentCapacityMin: number;
+  investmentCapacityMax: number;
   paidUpCapital: number;
-  isVerified?: boolean;
   isFeatured?: boolean;
+  status?: string;
 }
 
 interface BusinessCardProps {
@@ -45,9 +48,9 @@ export function BusinessCard({ business }: BusinessCardProps) {
 
       <div className="mb-4 flex items-start gap-4">
         <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-secondary">
-          {business.logo ? (
+          {business.logoUrl ? (
             <img
-              src={business.logo}
+              src={business.logoUrl}
               alt={business.name}
               className="h-10 w-10 rounded object-contain"
             />
@@ -68,9 +71,9 @@ export function BusinessCard({ business }: BusinessCardProps) {
 
       <div className="mb-4 flex flex-wrap gap-2">
         <Badge variant="secondary" className="bg-teal-50 text-teal-700">
-          {business.category}
+          {business.category.name}
         </Badge>
-        {business.isVerified && (
+        {business.status === 'APPROVED' && (
           <Badge variant="secondary" className="bg-success/10 text-success">
             ✓ Verified
           </Badge>
@@ -78,7 +81,7 @@ export function BusinessCard({ business }: BusinessCardProps) {
       </div>
 
       <p className="mb-4 line-clamp-2 text-sm text-muted-foreground">
-        {business.tagline}
+        {business.briefDescription}
       </p>
 
       <div className="mb-4 space-y-2 rounded-lg bg-secondary/50 p-3">
@@ -88,8 +91,8 @@ export function BusinessCard({ business }: BusinessCardProps) {
             Investment
           </span>
           <span className="font-semibold text-foreground">
-            NPR {formatCurrency(business.investmentMin)} -{" "}
-            {formatCurrency(business.investmentMax)}
+            NPR {formatCurrency(business.investmentCapacityMin)} -{" "}
+            {formatCurrency(business.investmentCapacityMax)}
           </span>
         </div>
         <div className="flex items-center justify-between text-sm">
@@ -100,15 +103,13 @@ export function BusinessCard({ business }: BusinessCardProps) {
         </div>
       </div>
 
-      <Link to={`/businesses/${business.id}`}>
-        <Button
-          variant="outline"
-          className="w-full group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all"
-        >
-          View Details
-          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-        </Button>
-      </Link>
+      <Button
+        variant="outline"
+        className="w-full group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-primary transition-all"
+      >
+        View Details
+        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+      </Button>
     </div>
   );
 }

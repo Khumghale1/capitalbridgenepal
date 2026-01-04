@@ -5,31 +5,58 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
-import { Mail, Lock, ArrowRight } from "lucide-react";
+import { Mail, Lock, ArrowRight, CheckCircle2, AlertCircle } from "lucide-react";
+import { api } from "@/lib/api";
 
 export default function AdminLogin() {
-  const { toast } = useToast();
   const navigate = useNavigate();
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error', title: string, message: string } | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+    setNotification(null);
 
-    // Set authentication state
-    login("admin");
+    try {
+      const data: any = await api.auth.login(email, password);
 
-    toast({
-      title: "Admin Login Successful!",
-      description: "Welcome to AarthiQ Admin Panel.",
-    });
-    console.log({ email, password });
+      // Check if user is admin
+      if (data.user.role !== 'ADMIN') {
+        throw new Error('Access denied. Admin credentials required.');
+      }
 
-    // Redirect to admin dashboard
-    navigate("/admin/dashboard");
+      // Store user data and token
+      localStorage.setItem('authToken', data.authToken);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      // Set authentication state
+      login("admin");
+
+      setNotification({
+        type: 'success',
+        title: 'Admin Login Successful!',
+        message: `Welcome back, ${data.user.username}!`
+      });
+
+      // Redirect to admin dashboard after a short delay to show the success message
+      setTimeout(() => {
+        navigate("/admin/dashboard");
+      }, 1500);
+    } catch (error) {
+      setNotification({
+        type: 'error',
+        title: 'Invalid Credentials',
+        message: error instanceof Error ? error.message : 'Invalid email or password'
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -47,6 +74,18 @@ export default function AdminLogin() {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  {notification && (
+                    <Alert variant={notification.type === 'error' ? 'destructive' : 'default'} className={notification.type === 'success' ? 'border-green-500 bg-green-50 text-green-900' : ''}>
+                      {notification.type === 'success' ? (
+                        <CheckCircle2 className="h-4 w-4 !text-green-600" />
+                      ) : (
+                        <AlertCircle className="h-4 w-4" />
+                      )}
+                      <AlertTitle>{notification.title}</AlertTitle>
+                      <AlertDescription>{notification.message}</AlertDescription>
+                    </Alert>
+                  )}
+
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <div className="relative">
@@ -79,8 +118,8 @@ export default function AdminLogin() {
                     </div>
                   </div>
 
-                  <Button type="submit" variant="hero" size="lg" className="w-full">
-                    Sign in
+                  <Button type="submit" variant="hero" size="lg" className="w-full" disabled={isLoading}>
+                    {isLoading ? "Signing in..." : "Sign in"}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </form>

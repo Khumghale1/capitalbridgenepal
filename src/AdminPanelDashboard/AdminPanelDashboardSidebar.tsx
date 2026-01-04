@@ -4,10 +4,7 @@ import {
   LayoutDashboard,
   Building2,
   CheckCircle,
-  XCircle,
   MessageSquare,
-  Tag,
-  Users,
   LogOut,
   Shield,
 } from "lucide-react";
@@ -20,10 +17,6 @@ const navigation = [
   { name: "Business Inquiries", href: "/admin/dashboard/inquiries", icon: MessageSquare },
   { name: "Pending Approvals", href: "/admin/dashboard/approvals", icon: CheckCircle },
   { name: "Active Businesses", href: "/admin/dashboard/businesses", icon: Building2 },
-  { name: "Removal Requests", href: "/admin/dashboard/removals", icon: XCircle },
-  { name: "Interest Submissions", href: "/admin/dashboard/submissions", icon: MessageSquare },
-  { name: "Sector Management", href: "/admin/dashboard/sectors", icon: Tag },
-  { name: "Admin Users", href: "/admin/dashboard/users", icon: Users },
 ];
 
 export function AdminPanelDashboardSidebar() {

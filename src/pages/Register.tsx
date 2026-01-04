@@ -1,9 +1,12 @@
-import { useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -14,6 +17,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { api } from "@/lib/api";
 import {
   Building2,
   Upload,
@@ -23,11 +27,27 @@ import {
   Users,
   FileText,
   Briefcase,
+  Loader2,
+  AlertCircle,
+  XCircle,
+  Lock,
 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function Register() {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Token validation state
+  const [isValidatingToken, setIsValidatingToken] = useState(true);
+  const [isValidToken, setIsValidToken] = useState(false);
+  const [tokenError, setTokenError] = useState<string | null>(null);
+  const [businessInfo, setBusinessInfo] = useState<any>(null);
+  const [registrationToken, setRegistrationToken] = useState<string | null>(null);
+
   const [currentTab, setCurrentTab] = useState("company");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     // Company Information
     companyName: "",
@@ -56,19 +76,143 @@ export default function Register() {
     linkedin: "",
     facebook: "",
     twitter: "",
+
+    // Authentication
+    password: "",
+    confirmPassword: "",
+    acceptTerms: false,
   });
 
-  const handleInputChange = (field: string, value: string) => {
+  // Validate token on mount
+  useEffect(() => {
+    const validateToken = async () => {
+      const token = searchParams.get('token');
+
+      // No token provided - show error
+      if (!token) {
+        setTokenError('No registration token provided. This page requires a valid invitation link.');
+        setIsValidatingToken(false);
+
+        // Redirect to home after 3 seconds
+        setTimeout(() => {
+          navigate('/');
+        }, 3000);
+        return;
+      }
+
+      try {
+        setIsValidatingToken(true);
+        setTokenError(null);
+
+        // Validate token with backend
+        const response: any = await api.onboarding.validateToken(token);
+
+        if (response.isValid) {
+          setIsValidToken(true);
+          setBusinessInfo(response);
+          setRegistrationToken(token);
+
+          // Pre-fill email from token validation
+          if (response.email) {
+            setFormData((prev) => ({ ...prev, email: response.email }));
+          }
+        } else {
+          setTokenError(response.message || 'Invalid or expired registration token.');
+          setIsValidToken(false);
+
+          // Redirect to home after 3 seconds
+          setTimeout(() => {
+            navigate('/');
+          }, 3000);
+        }
+      } catch (error) {
+        setTokenError(error instanceof Error ? error.message : 'Failed to validate registration token.');
+        setIsValidToken(false);
+
+        // Redirect to home after 3 seconds
+        setTimeout(() => {
+          navigate('/');
+        }, 3000);
+      } finally {
+        setIsValidatingToken(false);
+      }
+    };
+
+    validateToken();
+  }, [searchParams, navigate]);
+
+  const handleInputChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Registration Submitted!",
-      description: "Our team will review your submission within 2-3 business days.",
-    });
-    console.log("Form data:", formData);
+
+    if (!registrationToken) {
+      toast({
+        title: "Error",
+        description: "Invalid registration token.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate passwords match
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: "Password Mismatch",
+        description: "Password and Confirm Password do not match.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate password length
+    if (formData.password.length < 8) {
+      toast({
+        title: "Weak Password",
+        description: "Password must be at least 8 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate terms acceptance
+    if (!formData.acceptTerms) {
+      toast({
+        title: "Terms Required",
+        description: "You must accept the Terms and Conditions to register.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await api.onboarding.register({
+        token: registrationToken,
+        ...formData,
+      });
+
+      toast({
+        title: "Registration Submitted!",
+        description: "Your account has been created. Please wait for admin approval before logging in.",
+      });
+
+      // Redirect to business login after success
+      setTimeout(() => {
+        navigate('/business/login');
+      }, 2000);
+    } catch (error) {
+      toast({
+        title: "Submission Failed",
+        description: error instanceof Error ? error.message : "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const industries = [
@@ -109,6 +253,59 @@ export default function Register() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // Loading state while validating token
+  if (isValidatingToken) {
+    return (
+      <Layout>
+        <section className="min-h-screen flex items-center justify-center py-16">
+          <Card className="max-w-md w-full">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Validating Registration Link</h3>
+              <p className="text-sm text-muted-foreground text-center">
+                Please wait while we verify your registration token...
+              </p>
+            </CardContent>
+          </Card>
+        </section>
+      </Layout>
+    );
+  }
+
+  // Error state if token is invalid
+  if (!isValidToken || tokenError) {
+    return (
+      <Layout>
+        <section className="min-h-screen flex items-center justify-center py-16">
+          <Card className="max-w-md w-full">
+            <CardContent className="py-12">
+              <div className="flex flex-col items-center text-center">
+                <div className="h-16 w-16 rounded-full bg-red-100 flex items-center justify-center mb-4">
+                  <XCircle className="h-8 w-8 text-red-600" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2 text-foreground">
+                  Invalid Registration Link
+                </h3>
+                <p className="text-muted-foreground mb-6">
+                  {tokenError || 'The registration link is invalid or has expired.'}
+                </p>
+                <Alert variant="destructive" className="mb-6">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Registration links are valid for 72 hours only. Please contact the admin for a new invitation link.
+                  </AlertDescription>
+                </Alert>
+                <p className="text-sm text-muted-foreground">
+                  Redirecting to homepage in a few seconds...
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       {/* Hero Section */}
@@ -123,6 +320,16 @@ export default function Register() {
           <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
             Complete the form below to list your business and start connecting with investors
           </p>
+          {businessInfo && (
+            <div className="mt-4">
+              <Alert className="max-w-2xl mx-auto bg-green-50 border-green-200">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-800">
+                  Registration link verified for <strong>{businessInfo.businessName}</strong> ({businessInfo.email})
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
         </div>
       </section>
 
@@ -131,7 +338,7 @@ export default function Register() {
         <div className="container">
           <div className="mx-auto max-w-4xl">
             <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-8">
-              <TabsList className="grid w-full grid-cols-4 lg:grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="company" className="text-xs sm:text-sm">
                   <Building2 className="mr-1 h-4 w-4" />
                   <span className="hidden sm:inline">Company</span>
@@ -147,6 +354,10 @@ export default function Register() {
                 <TabsTrigger value="documents" className="text-xs sm:text-sm">
                   <Upload className="mr-1 h-4 w-4" />
                   <span className="hidden sm:inline">Documents</span>
+                </TabsTrigger>
+                <TabsTrigger value="authentication" className="text-xs sm:text-sm">
+                  <Lock className="mr-1 h-4 w-4" />
+                  <span className="hidden sm:inline">Auth</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -184,19 +395,38 @@ export default function Register() {
                         </div>
                       </div>
 
+                      <div className="space-y-2">
+                        <Label htmlFor="industry">Industry *</Label>
+                        <Select
+                          value={formData.industry}
+                          onValueChange={(value) => handleInputChange("industry", value)}
+                          required
+                        >
+                          <SelectTrigger id="industry">
+                            <SelectValue placeholder="Select industry" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {industries.map((industry) => (
+                              <SelectItem key={industry} value={industry}>
+                                {industry}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
                       <div className="grid gap-6 sm:grid-cols-2">
                         <div className="space-y-2">
-                          <Label htmlFor="panNumber">PAN Number *</Label>
+                          <Label htmlFor="panNumber">PAN Number (Optional)</Label>
                           <Input
                             id="panNumber"
                             placeholder="123456789"
                             value={formData.panNumber}
                             onChange={(e) => handleInputChange("panNumber", e.target.value)}
-                            required
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="foundedYear">Founded Year *</Label>
+                          <Label htmlFor="foundedYear">Founded Year (Optional)</Label>
                           <Input
                             id="foundedYear"
                             type="number"
@@ -205,50 +435,27 @@ export default function Register() {
                             max={new Date().getFullYear()}
                             value={formData.foundedYear}
                             onChange={(e) => handleInputChange("foundedYear", e.target.value)}
-                            required
                           />
                         </div>
                       </div>
 
-                      <div className="grid gap-6 sm:grid-cols-2">
-                        <div className="space-y-2">
-                          <Label htmlFor="industry">Industry *</Label>
-                          <Select
-                            value={formData.industry}
-                            onValueChange={(value) => handleInputChange("industry", value)}
-                            required
-                          >
-                            <SelectTrigger id="industry">
-                              <SelectValue placeholder="Select industry" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {industries.map((industry) => (
-                                <SelectItem key={industry} value={industry}>
-                                  {industry}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="companySize">Company Size *</Label>
-                          <Select
-                            value={formData.companySize}
-                            onValueChange={(value) => handleInputChange("companySize", value)}
-                            required
-                          >
-                            <SelectTrigger id="companySize">
-                              <SelectValue placeholder="Select company size" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {companySizes.map((size) => (
-                                <SelectItem key={size} value={size}>
-                                  {size}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="companySize">Company Size (Optional)</Label>
+                        <Select
+                          value={formData.companySize}
+                          onValueChange={(value) => handleInputChange("companySize", value)}
+                        >
+                          <SelectTrigger id="companySize">
+                            <SelectValue placeholder="Select company size" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {companySizes.map((size) => (
+                              <SelectItem key={size} value={size}>
+                                {size}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div className="flex justify-end">
@@ -421,11 +628,10 @@ export default function Register() {
 
                       <div className="grid gap-6 sm:grid-cols-2">
                         <div className="space-y-2">
-                          <Label htmlFor="fundingStage">Current Funding Stage *</Label>
+                          <Label htmlFor="fundingStage">Current Funding Stage (Optional)</Label>
                           <Select
                             value={formData.fundingStage}
                             onValueChange={(value) => handleInputChange("fundingStage", value)}
-                            required
                           >
                             <SelectTrigger id="fundingStage">
                               <SelectValue placeholder="Select stage" />
@@ -440,39 +646,36 @@ export default function Register() {
                           </Select>
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="investmentSought">Investment Amount Sought (NPR) *</Label>
+                          <Label htmlFor="investmentSought">Investment Amount Sought (NPR) (Optional)</Label>
                           <Input
                             id="investmentSought"
                             type="number"
                             placeholder="5000000"
                             value={formData.investmentSought}
                             onChange={(e) => handleInputChange("investmentSought", e.target.value)}
-                            required
                           />
                         </div>
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="useOfFunds">Use of Funds *</Label>
+                        <Label htmlFor="useOfFunds">Use of Funds (Optional)</Label>
                         <Textarea
                           id="useOfFunds"
                           placeholder="Explain how you plan to use the investment (e.g., product development, marketing, team expansion, etc.)..."
                           rows={4}
                           value={formData.useOfFunds}
                           onChange={(e) => handleInputChange("useOfFunds", e.target.value)}
-                          required
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="revenueModel">Revenue Model *</Label>
+                        <Label htmlFor="revenueModel">Revenue Model (Optional)</Label>
                         <Textarea
                           id="revenueModel"
                           placeholder="Describe how your business generates or plans to generate revenue..."
                           rows={4}
                           value={formData.revenueModel}
                           onChange={(e) => handleInputChange("revenueModel", e.target.value)}
-                          required
                         />
                       </div>
 
@@ -496,19 +699,44 @@ export default function Register() {
                     <CardHeader>
                       <CardTitle>Upload Documents</CardTitle>
                       <CardDescription>
-                        Upload required documents to complete your registration
+                        Upload supporting documents (all documents are optional)
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
                       <div className="space-y-4">
                         <div className="rounded-lg border-2 border-dashed border-border bg-secondary/20 p-6">
                           <div className="space-y-2">
-                            <Label htmlFor="companyLogo">Company Logo *</Label>
+                            <Label htmlFor="registrationCert">Company Registration Certificate (Optional)</Label>
+                            <Input
+                              id="registrationCert"
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                            />
+                            <p className="text-xs text-muted-foreground">PDF or image format</p>
+                          </div>
+                        </div>
+
+                        <div className="rounded-lg border-2 border-dashed border-border bg-secondary/20 p-6">
+                          <div className="space-y-2">
+                            <Label htmlFor="pitchDeck">Pitch Deck (Optional)</Label>
+                            <Input
+                              id="pitchDeck"
+                              type="file"
+                              accept=".pdf,.ppt,.pptx"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              PDF or PowerPoint format. Max 20MB
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="rounded-lg border-2 border-dashed border-border bg-secondary/20 p-6">
+                          <div className="space-y-2">
+                            <Label htmlFor="companyLogo">Company Logo (Optional)</Label>
                             <Input
                               id="companyLogo"
                               type="file"
                               accept="image/*"
-                              required
                             />
                             <p className="text-xs text-muted-foreground">
                               PNG, JPG, or SVG. Recommended size: 500x500px
@@ -518,42 +746,13 @@ export default function Register() {
 
                         <div className="rounded-lg border-2 border-dashed border-border bg-secondary/20 p-6">
                           <div className="space-y-2">
-                            <Label htmlFor="registrationCert">Company Registration Certificate *</Label>
-                            <Input
-                              id="registrationCert"
-                              type="file"
-                              accept=".pdf,.jpg,.jpeg,.png"
-                              required
-                            />
-                            <p className="text-xs text-muted-foreground">PDF or image format</p>
-                          </div>
-                        </div>
-
-                        <div className="rounded-lg border-2 border-dashed border-border bg-secondary/20 p-6">
-                          <div className="space-y-2">
-                            <Label htmlFor="panCert">PAN Certificate *</Label>
+                            <Label htmlFor="panCert">PAN Certificate (Optional)</Label>
                             <Input
                               id="panCert"
                               type="file"
                               accept=".pdf,.jpg,.jpeg,.png"
-                              required
                             />
                             <p className="text-xs text-muted-foreground">PDF or image format</p>
-                          </div>
-                        </div>
-
-                        <div className="rounded-lg border-2 border-dashed border-border bg-secondary/20 p-6">
-                          <div className="space-y-2">
-                            <Label htmlFor="pitchDeck">Pitch Deck *</Label>
-                            <Input
-                              id="pitchDeck"
-                              type="file"
-                              accept=".pdf,.ppt,.pptx"
-                              required
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              PDF or PowerPoint format. Max 20MB
-                            </p>
                           </div>
                         </div>
 
@@ -609,9 +808,127 @@ export default function Register() {
                           <ArrowLeft className="mr-2 h-4 w-4" />
                           Back
                         </Button>
-                        <Button type="submit" variant="hero" size="lg">
-                          <CheckCircle className="mr-2 h-5 w-5" />
-                          Submit Registration
+                        <Button type="button" onClick={() => nextTab("authentication")} variant="hero">
+                          Next: Authentication
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                {/* Tab 5: Authentication */}
+                <TabsContent value="authentication">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Create Your Account</CardTitle>
+                      <CardDescription>
+                        Set up your login credentials to access your business dashboard
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="space-y-2">
+                        <Label htmlFor="authEmail">Email Address *</Label>
+                        <Input
+                          id="authEmail"
+                          type="email"
+                          placeholder="your@email.com"
+                          value={formData.email}
+                          onChange={(e) => handleInputChange("email", e.target.value)}
+                          required
+                          disabled
+                          className="bg-secondary"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          This email will be used for login. (From your onboarding request)
+                        </p>
+                      </div>
+
+                      <div className="grid gap-6 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="password">Password *</Label>
+                          <Input
+                            id="password"
+                            type="password"
+                            placeholder="Create a strong password"
+                            value={formData.password}
+                            onChange={(e) => handleInputChange("password", e.target.value)}
+                            required
+                            minLength={8}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Minimum 8 characters
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="confirmPassword">Confirm Password *</Label>
+                          <Input
+                            id="confirmPassword"
+                            type="password"
+                            placeholder="Re-enter your password"
+                            value={formData.confirmPassword}
+                            onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                            required
+                            minLength={8}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="flex items-start space-x-3 rounded-lg border p-4">
+                          <Checkbox
+                            id="terms"
+                            checked={formData.acceptTerms}
+                            onCheckedChange={(checked) =>
+                              handleInputChange("acceptTerms", checked === true)
+                            }
+                            required
+                          />
+                          <div className="space-y-1 leading-none">
+                            <Label
+                              htmlFor="terms"
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            >
+                              I agree to the Terms and Conditions *
+                            </Label>
+                            <p className="text-sm text-muted-foreground">
+                              By registering, you agree to our{" "}
+                              <a href="/terms" className="text-primary hover:underline" target="_blank">
+                                Terms of Service
+                              </a>{" "}
+                              and{" "}
+                              <a href="/privacy" className="text-primary hover:underline" target="_blank">
+                                Privacy Policy
+                              </a>
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Alert className="bg-blue-50 border-blue-200">
+                        <Lock className="h-4 w-4 text-blue-600" />
+                        <AlertDescription className="text-blue-800">
+                          Your password will be securely encrypted. You'll use this email and password to log in to your business dashboard.
+                        </AlertDescription>
+                      </Alert>
+
+                      <div className="flex justify-between">
+                        <Button type="button" onClick={() => nextTab("documents")} variant="outline">
+                          <ArrowLeft className="mr-2 h-4 w-4" />
+                          Back
+                        </Button>
+                        <Button type="submit" variant="hero" size="lg" disabled={isSubmitting || !formData.acceptTerms}>
+                          {isSubmitting ? (
+                            <>
+                              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                              Submitting...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="mr-2 h-5 w-5" />
+                              Submit Registration
+                            </>
+                          )}
                         </Button>
                       </div>
                     </CardContent>
@@ -629,11 +946,10 @@ export default function Register() {
                   </div>
                   <div className="flex-1">
                     <h3 className="mb-1 text-lg font-semibold text-foreground">
-                      Registration Fee: NPR 15,000 / year
+                      Registr Your Account For Free!!!
                     </h3>
                     <p className="text-sm text-muted-foreground">
-                      Once approved, you'll receive payment instructions to activate your listing.
-                      Full refund available if not approved.
+                      Once approved, you'll receive Notification....
                     </p>
                   </div>
                 </div>

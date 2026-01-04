@@ -23,7 +23,6 @@ import BusinessDashboard from "./BusinessDashboard";
 import BusinessProfile from "./BusinessDashboard/Profile";
 import BusinessInquiries from "./BusinessDashboard/InvestmentInquiries";
 import BusinessMaterials from "./BusinessDashboard/Materials";
-import BusinessAnalytics from "./BusinessDashboard/Analytics";
 import BusinessSettings from "./BusinessDashboard/Settings";
 
 // Admin Panel Dashboard
@@ -31,10 +30,6 @@ import AdminPanelDashboard from "./AdminPanelDashboard";
 import AdminBusinessInquiries from "./AdminPanelDashboard/BusinessInquiries";
 import AdminPendingApprovals from "./AdminPanelDashboard/PendingApprovals";
 import AdminActiveBusinesses from "./AdminPanelDashboard/ActiveBusinesses";
-import AdminRemovalRequests from "./AdminPanelDashboard/RemovalRequests";
-import AdminInterestSubmissions from "./AdminPanelDashboard/InterestSubmissions";
-import AdminSectorManagement from "./AdminPanelDashboard/SectorManagement";
-import AdminUsers from "./AdminPanelDashboard/AdminUsers";
 
 const queryClient = new QueryClient();
 
@@ -63,7 +58,6 @@ const App = () => (
           <Route path="/business/dashboard/profile" element={<BusinessProtectedRoute><BusinessProfile /></BusinessProtectedRoute>} />
           <Route path="/business/dashboard/inquiries" element={<BusinessProtectedRoute><BusinessInquiries /></BusinessProtectedRoute>} />
           <Route path="/business/dashboard/materials" element={<BusinessProtectedRoute><BusinessMaterials /></BusinessProtectedRoute>} />
-          <Route path="/business/dashboard/analytics" element={<BusinessProtectedRoute><BusinessAnalytics /></BusinessProtectedRoute>} />
           <Route path="/business/dashboard/settings" element={<BusinessProtectedRoute><BusinessSettings /></BusinessProtectedRoute>} />
 
           {/* Admin Panel Dashboard Routes */}
@@ -71,10 +65,6 @@ const App = () => (
           <Route path="/admin/dashboard/inquiries" element={<AdminProtectedRoute><AdminBusinessInquiries /></AdminProtectedRoute>} />
           <Route path="/admin/dashboard/approvals" element={<AdminProtectedRoute><AdminPendingApprovals /></AdminProtectedRoute>} />
           <Route path="/admin/dashboard/businesses" element={<AdminProtectedRoute><AdminActiveBusinesses /></AdminProtectedRoute>} />
-          <Route path="/admin/dashboard/removals" element={<AdminProtectedRoute><AdminRemovalRequests /></AdminProtectedRoute>} />
-          <Route path="/admin/dashboard/submissions" element={<AdminProtectedRoute><AdminInterestSubmissions /></AdminProtectedRoute>} />
-          <Route path="/admin/dashboard/sectors" element={<AdminProtectedRoute><AdminSectorManagement /></AdminProtectedRoute>} />
-          <Route path="/admin/dashboard/users" element={<AdminProtectedRoute><AdminUsers /></AdminProtectedRoute>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

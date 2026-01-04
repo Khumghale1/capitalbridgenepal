@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Mail, Lock, ArrowRight } from "lucide-react";
+import { api } from "@/lib/api";
+import { Mail, Lock, ArrowRight, CheckCircle2, AlertCircle } from "lucide-react";
 
 export default function Login() {
   const { toast } = useToast();
@@ -18,21 +20,66 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error', title: string, message: string } | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+    setNotification(null);
 
-    // Set authentication state
-    login("business");
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data: any = await api.auth.login(email, password);
 
-    toast({
-      title: "Login Successful!",
-      description: "Welcome back to AarthiQ.",
-    });
-    console.log({ email, password, rememberMe });
+      // Check if user is a business (not admin)
+      if (data.user.role !== 'BUSINESS') {
+        throw new Error('Please use the admin login page for admin access.');
+      }
 
-    // Redirect to business dashboard
-    navigate("/business/dashboard");
+      // Store user data and token
+      localStorage.setItem('authToken', data.authToken);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      // Set authentication state
+      login("business");
+
+      setNotification({
+        type: 'success',
+        title: 'Login Successful!',
+        message: `Welcome back, ${data.user.username}!`
+      });
+
+      // Redirect to business dashboard after a short delay
+      setTimeout(() => {
+        navigate("/business/dashboard");
+      }, 1500);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Invalid email or password';
+
+      setNotification({
+        type: 'error',
+        title: 'Login Failed',
+        message: errorMessage
+      });
+
+      // Show specific toast messages for pending/rejected status
+      if (errorMessage.includes('pending')) {
+        toast({
+          title: "Registration Pending",
+          description: "Your business registration is still awaiting admin approval.",
+          variant: "destructive",
+        });
+      } else if (errorMessage.includes('rejected')) {
+        toast({
+          title: "Registration Rejected",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -50,6 +97,18 @@ export default function Login() {
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  {notification && (
+                    <Alert variant={notification.type === 'error' ? 'destructive' : 'default'} className={notification.type === 'success' ? 'border-green-500 bg-green-50 text-green-900' : ''}>
+                      {notification.type === 'success' ? (
+                        <CheckCircle2 className="h-4 w-4 !text-green-600" />
+                      ) : (
+                        <AlertCircle className="h-4 w-4" />
+                      )}
+                      <AlertTitle>{notification.title}</AlertTitle>
+                      <AlertDescription>{notification.message}</AlertDescription>
+                    </Alert>
+                  )}
+
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <div className="relative">
@@ -104,8 +163,8 @@ export default function Login() {
                     </label>
                   </div>
 
-                  <Button type="submit" variant="hero" size="lg" className="w-full">
-                    Sign in
+                  <Button type="submit" variant="hero" size="lg" className="w-full" disabled={isLoading}>
+                    {isLoading ? "Signing in..." : "Sign in"}
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </form>
@@ -147,12 +206,7 @@ export default function Login() {
                   </Button>
                 </div>
 
-                <div className="mt-6 text-center text-sm">
-                  <span className="text-muted-foreground">Don't have an account? </span>
-                  <Link to="/register" className="font-semibold text-primary hover:underline">
-                    Register your business
-                  </Link>
-                </div>
+             
               </CardContent>
             </Card>
 

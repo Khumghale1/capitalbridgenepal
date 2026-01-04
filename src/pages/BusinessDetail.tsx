@@ -3,11 +3,8 @@ import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BusinessCard } from "@/components/business/BusinessCard";
-import { mockBusinesses } from "@/data/mockData";
 import {
   MapPin,
-  Calendar,
-  Users,
   Globe,
   Mail,
   Phone,
@@ -17,13 +14,40 @@ import {
   Video,
   Image,
   Building2,
-  TrendingUp,
   ShieldCheck,
   Lock,
   ArrowLeft,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { api } from "@/lib/api";
+
+interface Business {
+  id: string;
+  name: string;
+  logoUrl?: string;
+  category: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  location: string;
+  briefDescription: string;
+  fullDescription?: string;
+  investmentCapacityMin: number;
+  investmentCapacityMax: number;
+  paidUpCapital: number;
+  yearEstablished: number;
+  businessType: string;
+  teamSize: string;
+  registrationNumber: string;
+  contactEmail: string;
+  contactPhone: string;
+  website?: string;
+  growthPlans?: string;
+  isFeatured?: boolean;
+  status?: string;
+}
 
 function formatCurrency(amount: number): string {
   if (amount >= 10000000) {
@@ -38,8 +62,70 @@ export default function BusinessDetail() {
   const { id } = useParams();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("pitch-deck");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [business, setBusiness] = useState<Business | null>(null);
+  const [relatedBusinesses, setRelatedBusinesses] = useState<Business[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [interestFormData, setInterestFormData] = useState({
+    investorName: "",
+    email: "",
+    phoneNumber: "",
+    remarks: "",
+  });
 
-  const business = mockBusinesses.find((b) => b.id === id);
+  useEffect(() => {
+    if (id) {
+      fetchBusinessDetails();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  const fetchBusinessDetails = async () => {
+    try {
+      setIsLoading(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response: any = await api.businesses.getById(id!);
+      const businessData = response.business;
+      setBusiness(businessData);
+
+      // Fetch all businesses to find related ones
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const allBusinessesResponse: any = await api.businesses.getAll();
+      const allBusinesses = allBusinessesResponse.businesses || [];
+
+      // Filter related businesses
+      const related = allBusinesses
+        .filter((b: Business) =>
+          b.category.name === businessData.category.name &&
+          b.id !== businessData.id
+        )
+        .slice(0, 3);
+
+      setRelatedBusinesses(related);
+    } catch (error) {
+      console.error("Failed to fetch business details:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load business details.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
+            <p className="mt-4 text-muted-foreground">Loading business details...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   if (!business) {
     return (
@@ -57,16 +143,40 @@ export default function BusinessDetail() {
     );
   }
 
-  const relatedBusinesses = mockBusinesses
-    .filter((b) => b.category === business.category && b.id !== business.id)
-    .slice(0, 3);
-
-  const handleInterestSubmit = (e: React.FormEvent) => {
+  const handleInterestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Interest Submitted!",
-      description: "The business will be notified of your interest.",
-    });
+    setIsSubmitting(true);
+
+    try {
+      await api.interests.submit({
+        businessId: id!,
+        investorName: interestFormData.investorName,
+        phoneNumber: interestFormData.phoneNumber,
+        email: interestFormData.email,
+        remarks: interestFormData.remarks || undefined,
+      });
+
+      toast({
+        title: "Interest Submitted!",
+        description: `Thank you! ${business.name} will be notified of your interest.`,
+      });
+
+      // Reset form
+      setInterestFormData({
+        investorName: "",
+        email: "",
+        phoneNumber: "",
+        remarks: "",
+      });
+    } catch (error) {
+      toast({
+        title: "Submission Failed",
+        description: error instanceof Error ? error.message : "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const tabs = [
@@ -114,7 +224,7 @@ export default function BusinessDetail() {
                       <h1 className="text-2xl font-bold text-foreground md:text-3xl">
                         {business.name}
                       </h1>
-                      {business.isVerified && (
+                      {business.status === 'APPROVED' && (
                         <Badge
                           variant="secondary"
                           className="gap-1 bg-success/10 text-success"
@@ -133,10 +243,10 @@ export default function BusinessDetail() {
                         variant="secondary"
                         className="bg-teal-50 text-teal-700"
                       >
-                        {business.category}
+                        {business.category.name}
                       </Badge>
                     </div>
-                    <p className="text-muted-foreground">{business.tagline}</p>
+                    <p className="text-muted-foreground">{business.briefDescription}</p>
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" size="icon">
@@ -155,8 +265,8 @@ export default function BusinessDetail() {
                       Investment Sought
                     </p>
                     <p className="font-bold text-foreground">
-                      NPR {formatCurrency(business.investmentMin)} -{" "}
-                      {formatCurrency(business.investmentMax)}
+                      NPR {formatCurrency(business.investmentCapacityMin)} -{" "}
+                      {formatCurrency(business.investmentCapacityMax)}
                     </p>
                   </div>
                   <div>
@@ -169,11 +279,11 @@ export default function BusinessDetail() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Established</p>
-                    <p className="font-bold text-foreground">2019</p>
+                    <p className="font-bold text-foreground">{business.yearEstablished}</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Team Size</p>
-                    <p className="font-bold text-foreground">25+ Employees</p>
+                    <p className="font-bold text-foreground">{business.teamSize}</p>
                   </div>
                 </div>
               </div>
@@ -184,18 +294,10 @@ export default function BusinessDetail() {
                   About the Business
                 </h2>
                 <div className="prose prose-gray max-w-none text-muted-foreground">
-                  <p>
-                    {business.name} is a leading company in the{" "}
-                    {business.category} sector, based in {business.location}. We
-                    are committed to delivering innovative solutions that
-                    address the unique challenges of our market.
-                  </p>
-                  <p>
-                    Our mission is to create sustainable value for our
-                    stakeholders while contributing to Nepal's economic growth.
-                    With a strong foundation and proven track record, we are now
-                    seeking investment to accelerate our expansion plans.
-                  </p>
+                  <p>{business.briefDescription}</p>
+                  {business.fullDescription && (
+                    <p className="mt-4 whitespace-pre-wrap">{business.fullDescription}</p>
+                  )}
                 </div>
               </div>
 
@@ -216,17 +318,14 @@ export default function BusinessDetail() {
                       <li>Clear path to profitability</li>
                     </ul>
                   </div>
-                  <div>
-                    <h3 className="mb-2 font-semibold text-foreground">
-                      Use of Funds
-                    </h3>
-                    <ul className="ml-5 list-disc space-y-1">
-                      <li>Market expansion (40%)</li>
-                      <li>Technology development (30%)</li>
-                      <li>Team building (20%)</li>
-                      <li>Working capital (10%)</li>
-                    </ul>
-                  </div>
+                  {business.growthPlans && (
+                    <div>
+                      <h3 className="mb-2 font-semibold text-foreground">
+                        Use of Funds / Growth Plans
+                      </h3>
+                      <p className="whitespace-pre-wrap">{business.growthPlans}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -282,8 +381,7 @@ export default function BusinessDetail() {
                     <div>
                       <p className="text-sm text-muted-foreground">Email</p>
                       <p className="font-medium text-foreground">
-                        info@{business.name.toLowerCase().replace(/\s/g, "")}
-                        .com
+                        {business.contactEmail}
                       </p>
                     </div>
                   </div>
@@ -294,21 +392,23 @@ export default function BusinessDetail() {
                     <div>
                       <p className="text-sm text-muted-foreground">Phone</p>
                       <p className="font-medium text-foreground">
-                        +977 1-4XXXXXX
+                        {business.contactPhone}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
-                      <Globe className="h-5 w-5 text-primary" />
+                  {business.website && (
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
+                        <Globe className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Website</p>
+                        <a href={business.website} target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline">
+                          {business.website}
+                        </a>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Website</p>
-                      <p className="font-medium text-primary hover:underline">
-                        www.{business.name.toLowerCase().replace(/\s/g, "")}.com
-                      </p>
-                    </div>
-                  </div>
+                  )}
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
                       <MapPin className="h-5 w-5 text-primary" />
@@ -340,8 +440,11 @@ export default function BusinessDetail() {
                       <input
                         type="text"
                         required
+                        value={interestFormData.investorName}
+                        onChange={(e) => setInterestFormData({ ...interestFormData, investorName: e.target.value })}
                         className="h-10 w-full rounded-lg border border-input bg-background px-3 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                         placeholder="Your name"
+                        disabled={isSubmitting}
                       />
                     </div>
                     <div>
@@ -351,8 +454,11 @@ export default function BusinessDetail() {
                       <input
                         type="email"
                         required
+                        value={interestFormData.email}
+                        onChange={(e) => setInterestFormData({ ...interestFormData, email: e.target.value })}
                         className="h-10 w-full rounded-lg border border-input bg-background px-3 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                         placeholder="your@email.com"
+                        disabled={isSubmitting}
                       />
                     </div>
                     <div>
@@ -362,8 +468,11 @@ export default function BusinessDetail() {
                       <input
                         type="tel"
                         required
+                        value={interestFormData.phoneNumber}
+                        onChange={(e) => setInterestFormData({ ...interestFormData, phoneNumber: e.target.value })}
                         className="h-10 w-full rounded-lg border border-input bg-background px-3 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                         placeholder="+977 9XXXXXXXXX"
+                        disabled={isSubmitting}
                       />
                     </div>
                     <div>
@@ -372,8 +481,11 @@ export default function BusinessDetail() {
                       </label>
                       <textarea
                         rows={3}
+                        value={interestFormData.remarks}
+                        onChange={(e) => setInterestFormData({ ...interestFormData, remarks: e.target.value })}
                         className="w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                         placeholder="Tell us about your investment interest..."
+                        disabled={isSubmitting}
                       />
                     </div>
                     <label className="flex items-start gap-2 text-sm">
@@ -381,13 +493,14 @@ export default function BusinessDetail() {
                         type="checkbox"
                         required
                         className="mt-1 rounded border-input"
+                        disabled={isSubmitting}
                       />
                       <span className="text-muted-foreground">
                         I agree to the Terms & Conditions and Privacy Policy
                       </span>
                     </label>
-                    <Button type="submit" variant="hero" className="w-full">
-                      Submit Interest
+                    <Button type="submit" variant="hero" className="w-full" disabled={isSubmitting}>
+                      {isSubmitting ? "Submitting..." : "Submit Interest"}
                     </Button>
                   </form>
                   <p className="mt-4 flex items-center justify-center gap-1 text-xs text-muted-foreground">
@@ -405,7 +518,7 @@ export default function BusinessDetail() {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Reg. Number</span>
                       <span className="font-medium text-foreground">
-                        12345/2019
+                        {business.registrationNumber}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -413,18 +526,18 @@ export default function BusinessDetail() {
                         Business Type
                       </span>
                       <span className="font-medium text-foreground">
-                        Pvt. Ltd.
+                        {business.businessType}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">
                         Year Established
                       </span>
-                      <span className="font-medium text-foreground">2019</span>
+                      <span className="font-medium text-foreground">{business.yearEstablished}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Employees</span>
-                      <span className="font-medium text-foreground">25+</span>
+                      <span className="font-medium text-foreground">{business.teamSize}</span>
                     </div>
                   </div>
                 </div>

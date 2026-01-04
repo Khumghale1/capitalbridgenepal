@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { BusinessCard } from "@/components/business/BusinessCard";
 import { CategoryCard } from "@/components/business/CategoryCard";
-import { mockBusinesses, categories, stats } from "@/data/mockData";
+import { stats } from "@/data/mockData";
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { api } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 import {
   Search,
   ArrowRight,
@@ -48,34 +51,127 @@ const categoryIcons: Record<string, any> = {
   Others: Layers,
 };
 
+interface Business {
+  id: string;
+  name: string;
+  logoUrl?: string;
+  category: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  location: string;
+  briefDescription: string;
+  investmentCapacityMin: number;
+  investmentCapacityMax: number;
+  paidUpCapital: number;
+  isFeatured?: boolean;
+  status?: string;
+}
+
 export default function Index() {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  // Show all businesses on home page
-  const allBusinesses = mockBusinesses;
+  // Real businesses data
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [categories, setCategories] = useState<Array<{ name: string; slug: string; count: number }>>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
 
-  // Modal state for List Your Business form
+  // Modal state for Business Onboarding form
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     businessName: "",
     email: "",
-    phone: "",
+    phoneNumber: "",
+    message: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Fetch businesses from API
+  useEffect(() => {
+    fetchBusinesses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const fetchBusinesses = async () => {
+    try {
+      setIsLoading(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response: any = await api.businesses.getAll();
+      const businessData = response.businesses || [];
+      setBusinesses(businessData);
+
+      // Extract unique categories with counts
+      const categoryMap = new Map<string, number>();
+      businessData.forEach((business: Business) => {
+        const catName = business.category.name;
+        categoryMap.set(catName, (categoryMap.get(catName) || 0) + 1);
+      });
+
+      const categoriesData = Array.from(categoryMap.entries()).map(([name, count]) => ({
+        name,
+        slug: name.toLowerCase().replace(/\s+/g, '-'),
+        count
+      }));
+
+      setCategories(categoriesData);
+    } catch (error) {
+      console.error("Failed to fetch businesses:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load businesses. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitted(true);
-    // Reset form after 3 seconds and close modal
-    setTimeout(() => {
-      setIsSubmitted(false);
-      setIsModalOpen(false);
-      setFormData({ businessName: "", email: "", phone: "" });
-    }, 3000);
+    setIsSubmitting(true);
+
+    try {
+      await api.onboarding.submit({
+        businessName: formData.businessName,
+        email: formData.email,
+        phoneNumber: formData.phoneNumber,
+        message: formData.message || undefined,
+      });
+
+      setIsSubmitted(true);
+
+      toast({
+        title: "Request Submitted!",
+        description: "Thank you! Our team will contact you shortly.",
+      });
+
+      // Reset form after 3 seconds and close modal
+      setTimeout(() => {
+        setIsSubmitted(false);
+        setIsModalOpen(false);
+        setFormData({
+          businessName: "",
+          email: "",
+          phoneNumber: "",
+          message: ""
+        });
+      }, 3000);
+    } catch (error) {
+      toast({
+        title: "Submission Failed",
+        description: error instanceof Error ? error.message : "Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSearch = () => {
@@ -184,11 +280,26 @@ export default function Index() {
           </div>
 
           {/* 2 columns layout, vertically scrollable */}
-          <div className="grid gap-6 md:grid-cols-2">
-            {allBusinesses.map((business) => (
-              <BusinessCard key={business.id} business={business} />
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
+                <p className="mt-4 text-muted-foreground">Loading businesses...</p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2">
+              {businesses.slice(0, 6).map((business) => (
+                <div
+                  key={business.id}
+                  onClick={() => navigate(`/businesses/${business.id}`)}
+                  className="cursor-pointer transition-transform hover:scale-[1.02]"
+                >
+                  <BusinessCard business={business} />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -302,6 +413,7 @@ export default function Index() {
                     setFormData({ ...formData, businessName: e.target.value })
                   }
                   required
+                  disabled={isSubmitting}
                 />
               </div>
 
@@ -316,25 +428,41 @@ export default function Index() {
                     setFormData({ ...formData, email: e.target.value })
                   }
                   required
+                  disabled={isSubmitting}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number *</Label>
+                <Label htmlFor="phoneNumber">Phone Number *</Label>
                 <Input
-                  id="phone"
+                  id="phoneNumber"
                   type="tel"
                   placeholder="+977 98XXXXXXXX"
-                  value={formData.phone}
+                  value={formData.phoneNumber}
                   onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
+                    setFormData({ ...formData, phoneNumber: e.target.value })
                   }
                   required
+                  disabled={isSubmitting}
                 />
               </div>
 
-              <Button type="submit" className="w-full" size="lg">
-                Submit
+              <div className="space-y-2">
+                <Label htmlFor="message">Message (Optional)</Label>
+                <Textarea
+                  id="message"
+                  placeholder="Tell us about your business..."
+                  value={formData.message}
+                  onChange={(e) =>
+                    setFormData({ ...formData, message: e.target.value })
+                  }
+                  rows={3}
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
+                {isSubmitting ? "Submitting..." : "Submit Request"}
               </Button>
             </form>
           ) : (

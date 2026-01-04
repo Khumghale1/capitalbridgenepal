@@ -5,7 +5,6 @@ import {
   User,
   MessageSquare,
   FolderOpen,
-  BarChart3,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -18,7 +17,6 @@ const navigation = [
   { name: "My Profile", href: "/business/dashboard/profile", icon: User },
   { name: "Investment Inquiries", href: "/business/dashboard/inquiries", icon: MessageSquare },
   { name: "Materials & Media", href: "/business/dashboard/materials", icon: FolderOpen },
-  { name: "Analytics", href: "/business/dashboard/analytics", icon: BarChart3 },
 ];
 
 export function BusinessDashboardSidebar() {

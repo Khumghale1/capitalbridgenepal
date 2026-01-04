@@ -7,7 +7,6 @@ import {
   CheckCircle,
   XCircle,
   MessageSquare,
-  TrendingUp,
   ArrowUpRight,
   Clock,
 } from "lucide-react";

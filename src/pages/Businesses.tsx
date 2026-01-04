@@ -1,20 +1,60 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { BusinessCard } from "@/components/business/BusinessCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { mockBusinesses, categories } from "@/data/mockData";
+import { useToast } from "@/hooks/use-toast";
+import { api } from "@/lib/api";
 import {
   Search,
   SlidersHorizontal,
   X,
   ChevronDown,
   ChevronUp,
+  Loader2,
 } from "lucide-react";
 
+interface Business {
+  id: string;
+  name: string;
+  registrationNumber: string;
+  category: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  businessType: string;
+  yearEstablished: number;
+  location: string;
+  teamSize: string;
+  paidUpCapital: number;
+  investmentCapacityMin: number;
+  investmentCapacityMax: number;
+  pricePerUnit?: number;
+  expectedReturnOptions?: string;
+  estimatedMarketValuation?: number;
+  ipoTimeHorizon?: string;
+  briefDescription: string;
+  fullDescription?: string;
+  growthPlans?: string;
+  contactEmail: string;
+  contactPhone: string;
+  website?: string;
+  facebookUrl?: string;
+  linkedinUrl?: string;
+  twitterUrl?: string;
+  logoUrl?: string;
+  viewCount: number;
+  isFeatured: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function Businesses() {
+  const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -26,7 +66,18 @@ export default function Businesses() {
     location: true,
   });
 
+  // Real businesses data
+  const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [categories, setCategories] = useState<Array<{ name: string; slug: string; count: number }>>([]);
+
   const locations = ["Kathmandu", "Lalitpur", "Bhaktapur", "Pokhara", "Butwal", "Birgunj"];
+
+  // Fetch businesses from API
+  useEffect(() => {
+    fetchBusinesses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Read URL parameters and set initial state
   useEffect(() => {
@@ -42,6 +93,40 @@ export default function Businesses() {
     }
   }, [searchParams]);
 
+  const fetchBusinesses = async () => {
+    try {
+      setIsLoading(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response: any = await api.businesses.getAll();
+      const businessData = response.businesses || [];
+      setBusinesses(businessData);
+
+      // Extract unique categories with counts
+      const categoryMap = new Map<string, number>();
+      businessData.forEach((business: Business) => {
+        const catName = business.category.name;
+        categoryMap.set(catName, (categoryMap.get(catName) || 0) + 1);
+      });
+
+      const categoriesData = Array.from(categoryMap.entries()).map(([name, count]) => ({
+        name,
+        slug: name.toLowerCase().replace(/\s+/g, '-'),
+        count
+      }));
+
+      setCategories(categoriesData);
+    } catch (error) {
+      console.error("Failed to fetch businesses:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load businesses. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const toggleCategory = (category: string) => {
     setSelectedCategories((prev) =>
       prev.includes(category)
@@ -55,15 +140,19 @@ export default function Businesses() {
     setSearchQuery("");
   };
 
-  const filteredBusinesses = mockBusinesses.filter((business) => {
+  const handleViewDetails = (business: Business) => {
+    navigate(`/businesses/${business.id}`);
+  };
+
+  const filteredBusinesses = businesses.filter((business) => {
     const matchesSearch =
       searchQuery === "" ||
       business.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      business.tagline.toLowerCase().includes(searchQuery.toLowerCase());
+      business.briefDescription.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesCategory =
       selectedCategories.length === 0 ||
-      selectedCategories.includes(business.category);
+      selectedCategories.includes(business.category.name);
 
     return matchesSearch && matchesCategory;
   });
@@ -253,11 +342,22 @@ export default function Businesses() {
                 </div>
               )}
 
-              {/* Business Grid */}
-              {filteredBusinesses.length > 0 ? (
+              {/* Loading State */}
+              {isLoading ? (
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                  <span className="ml-3 text-lg text-muted-foreground">Loading businesses...</span>
+                </div>
+              ) : filteredBusinesses.length > 0 ? (
                 <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-2">
                   {filteredBusinesses.map((business) => (
-                    <BusinessCard key={business.id} business={business} />
+                    <div
+                      key={business.id}
+                      onClick={() => handleViewDetails(business)}
+                      className="cursor-pointer transition-transform hover:scale-[1.02]"
+                    >
+                      <BusinessCard business={business} />
+                    </div>
                   ))}
                 </div>
               ) : (

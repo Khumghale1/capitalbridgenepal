@@ -8,7 +8,16 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, allowedUserTypes, redirectTo }: ProtectedRouteProps) {
-  const { isAuthenticated, userType } = useAuth();
+  const { isAuthenticated, userType, isLoading } = useAuth();
+
+  // Wait for auth state to load from localStorage
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   // If not authenticated, redirect to login
   if (!isAuthenticated) {
