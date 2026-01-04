@@ -28,14 +28,28 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,    // Production frontend
 ].filter(Boolean); // Remove undefined values
 
+// Log CORS configuration on startup
+console.log('CORS Configuration:');
+console.log('Allowed origins:', allowedOrigins);
+console.log('FRONTEND_URL env var:', process.env.FRONTEND_URL);
+
 app.use(cors({
   origin: (origin, callback) => {
+    // Log incoming requests for debugging
+    console.log('CORS request from origin:', origin);
+
     // Allow requests with no origin (like mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      console.log('✓ Allowing request with no origin');
+      return callback(null, true);
+    }
 
     if (allowedOrigins.includes(origin)) {
+      console.log('✓ Origin allowed:', origin);
       callback(null, true);
     } else {
+      console.log('✗ Origin rejected:', origin);
+      console.log('  Allowed origins:', allowedOrigins);
       callback(new Error('Not allowed by CORS'));
     }
   },
