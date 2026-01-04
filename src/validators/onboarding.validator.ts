@@ -57,65 +57,49 @@ export const validateTokenSchema = z.object({
 
 /**
  * Phase 3: Complete registration
+ * Updated to match Register.tsx frontend field names
  */
 export const completeRegistrationSchema = z.object({
   body: z.object({
     // Authentication
     token: z.string().min(64).max(64),
     password: z.string()
-      .min(8, 'Password must be at least 8 characters')
-      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-      .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-      .regex(/[0-9]/, 'Password must contain at least one number'),
+      .min(8, 'Password must be at least 8 characters'),
 
-    // Basic Information
-    name: z.string().min(2).max(100),
-    registrationNumber: z.string().min(1).max(100),
-    categoryId: z.number().int().positive(),
+    // Company Information (Required)
+    companyName: z.string().min(2, 'Company name must be at least 2 characters').max(255),
+    registrationNumber: z.string().min(1, 'Registration number is required').max(100),
+    industry: z.string().min(1, 'Industry is required').max(100),
 
-    // Business Details
-    businessType: z.string().min(1).max(100),
-    yearEstablished: z.number()
-      .int()
-      .min(1900)
-      .max(new Date().getFullYear()),
-    location: z.string().min(1).max(100),
-    teamSize: z.string().min(1).max(50),
+    // Company Information (Optional)
+    panNumber: z.string().max(50).optional().or(z.literal('')),
+    foundedYear: z.string().max(4).optional().or(z.literal('')),
+    companySize: z.string().max(50).optional().or(z.literal('')),
 
-    // Financial Information
-    paidUpCapital: z.number().positive(),
-    investmentCapacityMin: z.number().positive(),
-    investmentCapacityMax: z.number().positive(),
+    // Contact Information (Required)
+    email: z.string().email('Invalid email address').toLowerCase(),
+    phone: z.string().min(10, 'Phone number must be at least 10 characters').max(20),
+    address: z.string().min(1, 'Street address is required').max(255),
+    city: z.string().min(1, 'City is required').max(100),
+    district: z.string().min(1, 'District is required').max(100),
 
-    // Investment Parameters (optional)
-    pricePerUnit: z.number().positive().optional(),
-    expectedReturnOptions: z.string().max(255).optional(),
-    estimatedMarketValuation: z.number().positive().optional(),
-    ipoTimeHorizon: z.string().max(100).optional(),
-
-    // Descriptions
-    briefDescription: z.string().min(10).max(200),
-    fullDescription: z.string().max(5000).optional(),
-    vision: z.string().max(1000).optional(),
-    mission: z.string().max(1000).optional(),
-    growthPlans: z.string().max(2000).optional(),
-
-    // Contact Information
-    contactEmail: z.string().email().toLowerCase(),
-    contactPhone: z.string().regex(/^[0-9+\-\s()]+$/).min(10).max(20),
+    // Contact Information (Optional)
     website: z.string().url().optional().or(z.literal('')),
 
-    // Social Media (optional)
-    facebookUrl: z.string().url().optional().or(z.literal('')),
-    linkedinUrl: z.string().url().optional().or(z.literal('')),
-    twitterUrl: z.string().url().optional().or(z.literal(''))
-  }).refine(
-    (data) => data.investmentCapacityMax >= data.investmentCapacityMin,
-    {
-      message: 'Maximum investment capacity must be greater than or equal to minimum',
-      path: ['investmentCapacityMax']
-    }
-  )
+    // Business Details (Required)
+    description: z.string().min(10, 'Description must be at least 10 characters').max(2000),
+
+    // Business Details (Optional)
+    fundingStage: z.string().max(100).optional().or(z.literal('')),
+    investmentSought: z.string().max(50).optional().or(z.literal('')),
+    useOfFunds: z.string().max(1000).optional().or(z.literal('')),
+    revenueModel: z.string().max(1000).optional().or(z.literal('')),
+
+    // Social Media (Optional)
+    linkedin: z.string().url().optional().or(z.literal('')),
+    facebook: z.string().url().optional().or(z.literal('')),
+    twitter: z.string().url().optional().or(z.literal(''))
+  })
 });
 
 /**

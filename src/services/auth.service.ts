@@ -52,7 +52,10 @@ export const loginUser = async (email: string, password: string) => {
       isActive: true,
       business: {
         select: {
-          name: true
+          id: true,
+          name: true,
+          status: true,
+          rejectionReason: true
         }
       }
     }
@@ -70,12 +73,25 @@ export const loginUser = async (email: string, password: string) => {
       throw new UnauthorizedError('Invalid email or password');
     }
 
-    // Return business login info
+    // Check business status
+    if (businessLogin.business) {
+      if (businessLogin.business.status === 'REJECTED') {
+        throw new UnauthorizedError(`Your business registration was rejected. Reason: ${businessLogin.business.rejectionReason || 'Not specified'}`);
+      }
+
+      if (businessLogin.business.status === 'PENDING') {
+        throw new UnauthorizedError('Your business registration is still pending admin approval. Please wait for approval before logging in.');
+      }
+    }
+
+    // Return business login info (only if APPROVED)
     return {
       id: businessLogin.id,
       email: businessLogin.email,
       role: 'BUSINESS' as const,
-      username: businessLogin.business?.name || null
+      username: businessLogin.business?.name || null,
+      businessId: businessLogin.business?.id || null,
+      businessStatus: businessLogin.business?.status || null
     };
   }
 

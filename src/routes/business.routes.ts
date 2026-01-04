@@ -4,7 +4,11 @@ import {
   approveBusinessHandler,
   rejectBusinessHandler,
   listApprovedBusinessesHandler,
-  getApprovedBusinessByIdHandler
+  getApprovedBusinessByIdHandler,
+  listAllBusinessesForAdminHandler,
+  getBusinessDetailsByIdForAdminHandler,
+  updateBusinessHandler,
+  toggleBusinessActiveHandler
 } from '../controllers/business.controller';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 import { validate } from '../middlewares/validation.middleware';
@@ -13,7 +17,10 @@ import {
   approveBusinessSchema,
   rejectBusinessSchema,
   listApprovedBusinessesSchema,
-  getBusinessByIdSchema
+  getBusinessByIdSchema,
+  listAllBusinessesForAdminSchema,
+  updateBusinessSchema,
+  toggleBusinessActiveSchema
 } from '../validators/business.validator';
 
 const router = Router();
@@ -66,6 +73,58 @@ router.put(
   authorize('ADMIN'),
   validate(rejectBusinessSchema),
   rejectBusinessHandler
+);
+
+/**
+ * @route   GET /api/businesses/active
+ * @desc    List all businesses for admin (includes active/inactive status)
+ * @access  Private (Admin)
+ */
+router.get(
+  '/active',
+  authenticate,
+  authorize('ADMIN'),
+  validate(listAllBusinessesForAdminSchema),
+  listAllBusinessesForAdminHandler
+);
+
+/**
+ * @route   PUT /api/businesses/:id/toggle-active
+ * @desc    Toggle business active status
+ * @access  Private (Admin)
+ */
+router.put(
+  '/:id/toggle-active',
+  authenticate,
+  authorize('ADMIN'),
+  validate(toggleBusinessActiveSchema),
+  toggleBusinessActiveHandler
+);
+
+/**
+ * @route   GET /api/businesses/:id/details
+ * @desc    Get full business details by ID (Admin)
+ * @access  Private (Admin)
+ */
+router.get(
+  '/:id/details',
+  authenticate,
+  authorize('ADMIN'),
+  validate(getBusinessByIdSchema),
+  getBusinessDetailsByIdForAdminHandler
+);
+
+/**
+ * @route   PUT /api/businesses/:id
+ * @desc    Update business details
+ * @access  Private (Admin)
+ */
+router.put(
+  '/:id',
+  authenticate,
+  authorize('ADMIN'),
+  validate(updateBusinessSchema),
+  updateBusinessHandler
 );
 
 /**

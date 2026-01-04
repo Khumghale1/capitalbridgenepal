@@ -111,12 +111,16 @@ export const approveOnboardingRequest = async (requestId: string) => {
     }
   });
 
-  // Send approval email
-  await sendOnboardingApprovalEmail(
-    updated.email,
-    updated.businessName,
-    token
-  );
+  // Send approval email (non-blocking - don't fail if email fails)
+  try {
+    await sendOnboardingApprovalEmail(
+      updated.email,
+      updated.businessName,
+      token
+    );
+  } catch (emailError) {
+    console.warn('Failed to send approval email (continuing anyway):', emailError);
+  }
 
   return updated;
 };
@@ -235,6 +239,22 @@ export const completeBusinessRegistration = async (
     throw new ConflictError('Registration number already exists');
   }
 
+  // Find or create category based on industry name
+  let category = await prisma.category.findFirst({
+    where: { name: businessData.industry }
+  });
+
+  if (!category) {
+    // Create category if it doesn't exist
+    const slug = businessData.industry.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    category = await prisma.category.create({
+      data: {
+        name: businessData.industry,
+        slug: slug
+      }
+    });
+  }
+
   // Hash password
   const passwordHash = await hashPassword(password);
 
@@ -249,35 +269,44 @@ export const completeBusinessRegistration = async (
       }
     });
 
+    // Map form data to database schema
+    const location = businessData.city && businessData.district
+      ? `${businessData.city}, ${businessData.district}`
+      : businessData.city || businessData.district || 'Not specified';
+
     // Create business
     const business = await tx.business.create({
       data: {
         businessLoginId: businessLogin.id,
-        name: businessData.name,
+        name: businessData.companyName,
         registrationNumber: businessData.registrationNumber,
-        categoryId: businessData.categoryId,
-        businessType: businessData.businessType,
-        yearEstablished: businessData.yearEstablished,
-        location: businessData.location,
-        teamSize: businessData.teamSize,
-        paidUpCapital: businessData.paidUpCapital,
-        investmentCapacityMin: businessData.investmentCapacityMin,
-        investmentCapacityMax: businessData.investmentCapacityMax,
-        pricePerUnit: businessData.pricePerUnit || null,
-        expectedReturnOptions: businessData.expectedReturnOptions || null,
-        estimatedMarketValuation: businessData.estimatedMarketValuation || null,
-        ipoTimeHorizon: businessData.ipoTimeHorizon || null,
-        briefDescription: businessData.briefDescription,
-        fullDescription: businessData.fullDescription || null,
-        vision: businessData.vision || null,
-        mission: businessData.mission || null,
-        growthPlans: businessData.growthPlans || null,
-        contactEmail: businessData.contactEmail,
-        contactPhone: businessData.contactPhone,
+        categoryId: category.id,
+        businessType: businessData.companySize || 'Not specified',
+        yearEstablished: businessData.foundedYear ? parseInt(businessData.foundedYear) : new Date().getFullYear(),
+        location: location,
+        teamSize: businessData.companySize || 'Not specified',
+        // Financial fields with defaults
+        paidUpCapital: businessData.investmentSought ? parseFloat(businessData.investmentSought) : 0,
+        investmentCapacityMin: 0,
+        investmentCapacityMax: businessData.investmentSought ? parseFloat(businessData.investmentSought) : 0,
+        pricePerUnit: null,
+        expectedReturnOptions: businessData.fundingStage || null,
+        estimatedMarketValuation: null,
+        ipoTimeHorizon: null,
+        // Descriptions
+        briefDescription: businessData.description,
+        fullDescription: businessData.revenueModel || businessData.useOfFunds || null,
+        vision: null,
+        mission: null,
+        growthPlans: businessData.useOfFunds || null,
+        // Contact information
+        contactEmail: businessData.email || request.email,
+        contactPhone: businessData.phone,
         website: businessData.website || null,
-        facebookUrl: businessData.facebookUrl || null,
-        linkedinUrl: businessData.linkedinUrl || null,
-        twitterUrl: businessData.twitterUrl || null,
+        facebookUrl: businessData.facebook || null,
+        linkedinUrl: businessData.linkedin || null,
+        twitterUrl: businessData.twitter || null,
+        logoUrl: null, // Will be updated after file upload
         status: 'PENDING'
       }
     });

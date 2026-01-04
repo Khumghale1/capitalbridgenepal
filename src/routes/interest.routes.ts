@@ -1,7 +1,8 @@
 import { Router } from 'express';
-import { submitInterestHandler } from '../controllers/interest.controller';
+import { submitInterestHandler, getAllInterestsHandler } from '../controllers/interest.controller';
 import { validate } from '../middlewares/validation.middleware';
 import { submitInterestSchema } from '../validators/interest.validator';
+import { authenticate, authorize } from '../middlewares/auth.middleware';
 
 const router = Router();
 
@@ -14,6 +15,18 @@ router.post(
   '/',
   validate(submitInterestSchema),
   submitInterestHandler
+);
+
+/**
+ * @route   GET /api/interests
+ * @desc    Get all interest submissions (Admin only)
+ * @access  Admin
+ */
+router.get(
+  '/',
+  authenticate,
+  authorize('ADMIN'),
+  getAllInterestsHandler
 );
 
 export default router;

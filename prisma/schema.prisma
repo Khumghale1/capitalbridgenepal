@@ -142,6 +142,7 @@ model Business {
   // Status & Approval
   status                    BusinessStatus @default(PENDING)
   rejectionReason           String?        @map("rejection_reason") @db.Text
+  isActive                  Boolean        @default(true) @map("is_active")
 
   // Metadata
   viewCount                 Int            @default(0) @map("view_count")

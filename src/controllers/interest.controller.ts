@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { submitInterest } from '../services/interest.service';
+import { submitInterest, getAllInterests } from '../services/interest.service';
 
 /**
  * POST /api/interests
@@ -28,6 +28,30 @@ export const submitInterestHandler = async (
         businessName: interest.businessName,
         submittedAt: interest.submittedAt
       }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/interests
+ * Get all interest submissions (Admin only)
+ */
+export const getAllInterestsHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 50;
+
+    const result = await getAllInterests({ page, limit });
+
+    return res.status(200).json({
+      message: 'Interests fetched successfully',
+      ...result
     });
   } catch (error) {
     next(error);

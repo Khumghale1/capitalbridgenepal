@@ -111,3 +111,43 @@ export const getBusinessInterests = async (
     }
   };
 };
+
+/**
+ * Get all interest submissions (Admin only)
+ */
+export const getAllInterests = async (filters: {
+  page?: number;
+  limit?: number;
+}) => {
+  const page = filters.page || 1;
+  const limit = filters.limit || 50;
+  const skip = (page - 1) * limit;
+
+  const [interests, total] = await Promise.all([
+    prisma.interestSubmission.findMany({
+      orderBy: { submittedAt: 'desc' },
+      skip,
+      take: limit,
+      include: {
+        business: {
+          select: {
+            name: true,
+            registrationNumber: true,
+            contactEmail: true
+          }
+        }
+      }
+    }),
+    prisma.interestSubmission.count()
+  ]);
+
+  return {
+    interests,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit)
+    }
+  };
+};

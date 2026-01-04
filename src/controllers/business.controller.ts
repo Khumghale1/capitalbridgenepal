@@ -4,7 +4,11 @@ import {
   approveBusiness,
   rejectBusiness,
   listApprovedBusinesses,
-  getApprovedBusinessById
+  getApprovedBusinessById,
+  listAllBusinessesForAdmin,
+  getBusinessDetailsByIdForAdmin,
+  updateBusiness,
+  toggleBusinessActive
 } from '../services/business.service';
 
 /**
@@ -123,6 +127,96 @@ export const getApprovedBusinessByIdHandler = async (
     const business = await getApprovedBusinessById(id);
 
     return res.status(200).json({ business });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/businesses/active
+ * List all businesses for admin (includes active/inactive)
+ */
+export const listAllBusinessesForAdminHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { page, limit } = req.query;
+
+    const result = await listAllBusinessesForAdmin({
+      page: page ? parseInt(page as string) : undefined,
+      limit: limit ? parseInt(limit as string) : undefined
+    });
+
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/businesses/:id/details
+ * Get full business details by ID (Admin)
+ */
+export const getBusinessDetailsByIdForAdminHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    const business = await getBusinessDetailsByIdForAdmin(id);
+
+    return res.status(200).json({ business });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PUT /api/businesses/:id
+ * Update business details (Admin)
+ */
+export const updateBusinessHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    const business = await updateBusiness(id, req.body);
+
+    return res.status(200).json({
+      message: 'Business updated successfully',
+      business
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PUT /api/businesses/:id/toggle-active
+ * Toggle business active status (Admin)
+ */
+export const toggleBusinessActiveHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    const business = await toggleBusinessActive(id);
+
+    return res.status(200).json({
+      message: `Business ${business.isActive ? 'activated' : 'deactivated'} successfully`,
+      business: {
+        id: business.id,
+        name: business.name,
+        isActive: business.isActive
+      }
+    });
   } catch (error) {
     next(error);
   }

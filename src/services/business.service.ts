@@ -1,21 +1,21 @@
 import prisma from '../config/prisma.config';
-import { sendBusinessApprovalEmail, sendBusinessRejectionEmail } from './email.service';
 import { NotFoundError, BadRequestError } from '../utils/errors';
 
 /**
  * List pending businesses (Admin)
+ * Now returns ALL businesses for review (PENDING, APPROVED, REJECTED)
  */
 export const listPendingBusinesses = async (filters: {
   page?: number;
   limit?: number;
 }) => {
   const page = filters.page || 1;
-  const limit = filters.limit || 20;
+  const limit = filters.limit || 50; // Increased to show more businesses
   const skip = (page - 1) * limit;
 
   const [businesses, total] = await Promise.all([
     prisma.business.findMany({
-      where: { status: 'PENDING' },
+      // Removed status filter - now shows all businesses
       include: {
         businessLogin: {
           select: { id: true, email: true }
@@ -28,7 +28,7 @@ export const listPendingBusinesses = async (filters: {
       skip,
       take: limit
     }),
-    prisma.business.count({ where: { status: 'PENDING' } })
+    prisma.business.count() // Count all businesses
   ]);
 
   return {
@@ -59,20 +59,39 @@ export const approveBusiness = async (businessId: string) => {
     throw new BadRequestError('Business already approved');
   }
 
-  const updated = await prisma.business.update({
-    where: { id: businessId },
-    data: {
-      status: 'APPROVED',
-      rejectionReason: null
+  // Use transaction to update both business and invalidate the onboarding token
+  const updated = await prisma.$transaction(async (tx) => {
+    // Update business status
+    const updatedBusiness = await tx.business.update({
+      where: { id: businessId },
+      data: {
+        status: 'APPROVED',
+        rejectionReason: null
+      }
+    });
+
+    // Find and invalidate the onboarding token
+    // Clear the token so it cannot be used again
+    const onboardingRequest = await tx.businessOnboardingRequest.findFirst({
+      where: {
+        createdBusinessLoginId: business.businessLoginId
+      }
+    });
+
+    if (onboardingRequest && onboardingRequest.onboardingToken) {
+      await tx.businessOnboardingRequest.update({
+        where: { id: onboardingRequest.id },
+        data: {
+          onboardingToken: null,
+          tokenExpiresAt: null
+        }
+      });
     }
+
+    return updatedBusiness;
   });
 
-  // Send approval email
-  await sendBusinessApprovalEmail(
-    business.businessLogin.email,
-    business.name
-  );
-
+  // Email removed - admin will call directly
   return updated;
 };
 
@@ -93,21 +112,39 @@ export const rejectBusiness = async (businessId: string, reason: string) => {
     throw new BadRequestError('Business already rejected');
   }
 
-  const updated = await prisma.business.update({
-    where: { id: businessId },
-    data: {
-      status: 'REJECTED',
-      rejectionReason: reason
+  // Use transaction to update both business and invalidate the onboarding token
+  const updated = await prisma.$transaction(async (tx) => {
+    // Update business status
+    const updatedBusiness = await tx.business.update({
+      where: { id: businessId },
+      data: {
+        status: 'REJECTED',
+        rejectionReason: reason
+      }
+    });
+
+    // Find and invalidate the onboarding token
+    // Clear the token so it cannot be used again
+    const onboardingRequest = await tx.businessOnboardingRequest.findFirst({
+      where: {
+        createdBusinessLoginId: business.businessLoginId
+      }
+    });
+
+    if (onboardingRequest && onboardingRequest.onboardingToken) {
+      await tx.businessOnboardingRequest.update({
+        where: { id: onboardingRequest.id },
+        data: {
+          onboardingToken: null,
+          tokenExpiresAt: null
+        }
+      });
     }
+
+    return updatedBusiness;
   });
 
-  // Send rejection email
-  await sendBusinessRejectionEmail(
-    business.businessLogin.email,
-    business.name,
-    reason
-  );
-
+  // Email removed - admin will call directly
   return updated;
 };
 
@@ -194,6 +231,7 @@ export const getApprovedBusinessById = async (businessId: string) => {
 
 /**
  * List approved businesses (Public)
+ * Now also checks isActive field
  */
 export const listApprovedBusinesses = async (filters: {
   categoryId?: string;
@@ -204,7 +242,7 @@ export const listApprovedBusinesses = async (filters: {
   const limit = filters.limit || 20;
   const skip = (page - 1) * limit;
 
-  const where: any = { status: 'APPROVED' };
+  const where: any = { status: 'APPROVED', isActive: true };
   if (filters.categoryId) {
     where.categoryId = filters.categoryId;
   }
@@ -263,4 +301,162 @@ export const listApprovedBusinesses = async (filters: {
       totalPages: Math.ceil(total / limit)
     }
   };
+};
+
+/**
+ * List all active businesses for admin (includes both active and inactive)
+ */
+export const listAllBusinessesForAdmin = async (filters: {
+  page?: number;
+  limit?: number;
+  status?: string;
+}) => {
+  const page = filters.page || 1;
+  const limit = filters.limit || 50;
+  const skip = (page - 1) * limit;
+
+  const where: any = { status: 'APPROVED' };
+
+  const [businesses, total] = await Promise.all([
+    prisma.business.findMany({
+      where,
+      include: {
+        businessLogin: {
+          select: { id: true, email: true }
+        },
+        category: {
+          select: { id: true, name: true, slug: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit
+    }),
+    prisma.business.count({ where })
+  ]);
+
+  return {
+    businesses,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit)
+    }
+  };
+};
+
+/**
+ * Get full business details by ID (Admin)
+ */
+export const getBusinessDetailsByIdForAdmin = async (businessId: string) => {
+  const business = await prisma.business.findUnique({
+    where: { id: businessId },
+    include: {
+      businessLogin: {
+        select: { id: true, email: true }
+      },
+      category: {
+        select: { id: true, name: true, slug: true }
+      },
+      media: true,
+      interests: {
+        take: 10,
+        orderBy: { submittedAt: 'desc' }
+      }
+    }
+  });
+
+  if (!business) {
+    throw new NotFoundError('Business not found');
+  }
+
+  return business;
+};
+
+/**
+ * Update business details (Admin)
+ */
+export const updateBusiness = async (
+  businessId: string,
+  data: {
+    name?: string;
+    categoryId?: number;
+    businessType?: string;
+    yearEstablished?: number;
+    location?: string;
+    teamSize?: string;
+    paidUpCapital?: number;
+    investmentCapacityMin?: number;
+    investmentCapacityMax?: number;
+    pricePerUnit?: number;
+    expectedReturnOptions?: string;
+    estimatedMarketValuation?: number;
+    ipoTimeHorizon?: string;
+    briefDescription?: string;
+    fullDescription?: string;
+    vision?: string;
+    mission?: string;
+    growthPlans?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    website?: string;
+    facebookUrl?: string;
+    linkedinUrl?: string;
+    twitterUrl?: string;
+    logoUrl?: string;
+    isFeatured?: boolean;
+  }
+) => {
+  const business = await prisma.business.findUnique({
+    where: { id: businessId }
+  });
+
+  if (!business) {
+    throw new NotFoundError('Business not found');
+  }
+
+  const updated = await prisma.business.update({
+    where: { id: businessId },
+    data
+  });
+
+  return updated;
+};
+
+/**
+ * Toggle business active status (Admin)
+ * Also toggles the business login access
+ */
+export const toggleBusinessActive = async (businessId: string) => {
+  const business = await prisma.business.findUnique({
+    where: { id: businessId },
+    include: {
+      businessLogin: true
+    }
+  });
+
+  if (!business) {
+    throw new NotFoundError('Business not found');
+  }
+
+  const newActiveStatus = !business.isActive;
+
+  // Update both Business.isActive and BusinessLogin.isActive
+  const updated = await prisma.business.update({
+    where: { id: businessId },
+    data: {
+      isActive: newActiveStatus,
+      businessLogin: {
+        update: {
+          isActive: newActiveStatus
+        }
+      }
+    },
+    include: {
+      businessLogin: true
+    }
+  });
+
+  return updated;
 };
