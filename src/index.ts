@@ -25,7 +25,8 @@ const allowedOrigins = [
   'http://localhost:8080',     // Vite dev server
   'http://localhost:3000',     // Alternative local port
   'http://localhost:4173',     // Vite preview
-  process.env.FRONTEND_URL,    // Production frontend
+  process.env.FRONTEND_URL,    // Production frontend (Vercel)
+  'https://capitalbridgenepal.onrender.com', // Backend itself (for testing)
 ].filter(Boolean); // Remove undefined values
 
 // Log CORS configuration on startup
