@@ -13,14 +13,19 @@ async function apiRequest<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
-  const headers: HeadersInit = {
+  // Extract skip-auth flag and remove it from headers
+  const headersObj = options.headers as Record<string, string> || {};
+  const skipAuth = headersObj['skip-auth'] === 'true';
+  const { 'skip-auth': _, ...restHeaders } = headersObj;
+
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...options.headers,
+    ...restHeaders,
   };
 
   // Add auth token if available (unless explicitly excluded)
   const token = getAuthToken();
-  if (token && !options.headers?.['skip-auth']) {
+  if (token && !skipAuth) {
     headers['Authorization'] = token;
   }
 
@@ -149,7 +154,7 @@ export const api = {
     },
 
     // Update business (Admin)
-    update: async (id: string, data: any) => {
+    update: async (id: string, data: Record<string, unknown>) => {
       return apiRequest(`/api/businesses/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
@@ -159,6 +164,34 @@ export const api = {
     // Toggle business active status (Admin)
     toggleActive: async (id: string) => {
       return apiRequest(`/api/businesses/${id}/toggle-active`, {
+        method: 'PUT',
+      });
+    },
+
+    // Get all removal requests (Admin)
+    getRemovalRequests: async (params?: { page?: number; limit?: number }) => {
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+      const query = queryParams.toString();
+      const endpoint = query ? `/api/businesses/removal-requests?${query}` : '/api/businesses/removal-requests';
+
+      return apiRequest(endpoint, {
+        method: 'GET',
+      });
+    },
+
+    // Approve removal request (Admin)
+    approveRemovalRequest: async (requestId: string) => {
+      return apiRequest(`/api/businesses/removal-requests/${requestId}/approve`, {
+        method: 'PUT',
+      });
+    },
+
+    // Reject removal request (Admin)
+    rejectRemovalRequest: async (requestId: string) => {
+      return apiRequest(`/api/businesses/removal-requests/${requestId}/reject`, {
         method: 'PUT',
       });
     },
@@ -210,7 +243,7 @@ export const api = {
     },
 
     // Complete registration with token (Public)
-    register: async (data: any) => {
+    register: async (data: Record<string, unknown>) => {
       return apiRequest('/api/onboarding/register', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -229,7 +262,7 @@ export const api = {
     },
 
     // Update own business profile
-    updateOwnProfile: async (data: any) => {
+    updateOwnProfile: async (data: Record<string, unknown>) => {
       return apiRequest('/api/business/profile', {
         method: 'PUT',
         body: JSON.stringify(data),
@@ -247,6 +280,22 @@ export const api = {
 
       return apiRequest(endpoint, {
         method: 'GET',
+      });
+    },
+
+    // Change password
+    changePassword: async (data: { currentPassword: string; newPassword: string }) => {
+      return apiRequest('/api/business/change-password', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+
+    // Request profile removal
+    requestRemoval: async (data: { reason?: string }) => {
+      return apiRequest('/api/business/request-removal', {
+        method: 'POST',
+        body: JSON.stringify(data),
       });
     },
   },

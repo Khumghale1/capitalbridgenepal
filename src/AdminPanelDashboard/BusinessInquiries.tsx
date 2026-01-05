@@ -141,6 +141,30 @@ export default function BusinessInquiries() {
     }
   };
 
+  const isTokenExpired = (tokenExpiresAt: string | null): boolean => {
+    if (!tokenExpiresAt) return false;
+    return new Date(tokenExpiresAt) < new Date();
+  };
+
+  const getTokenTimeRemaining = (tokenExpiresAt: string | null): string | null => {
+    if (!tokenExpiresAt) return null;
+
+    const expiryDate = new Date(tokenExpiresAt);
+    const now = new Date();
+    const diffMs = expiryDate.getTime() - now.getTime();
+
+    if (diffMs <= 0) return 'Expired';
+
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffMins = Math.floor((diffMs % 3600000) / 60000);
+
+    if (diffHours < 1) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} left`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} left`;
+
+    const diffDays = Math.floor(diffHours / 24);
+    return `${diffDays} day${diffDays !== 1 ? 's' : ''} left`;
+  };
+
   return (
     <AdminPanelDashboardLayout>
       <div className="mb-8">
@@ -280,11 +304,16 @@ export default function BusinessInquiries() {
                           </p>
 
                           {/* Show registration link for approved requests */}
-                          {request.status === 'APPROVED' && request.onboardingToken && (
+                          {request.status === 'APPROVED' && request.onboardingToken && !isTokenExpired(request.tokenExpiresAt) && (
                             <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                              <Label className="text-xs font-medium text-green-800 mb-1 block">
-                                Registration Link (Valid for 72 hours)
-                              </Label>
+                              <div className="flex items-center justify-between mb-1">
+                                <Label className="text-xs font-medium text-green-800">
+                                  Registration Link
+                                </Label>
+                                <span className="text-xs text-green-700">
+                                  {getTokenTimeRemaining(request.tokenExpiresAt)}
+                                </span>
+                              </div>
                               <div className="flex items-center gap-2">
                                 <Input
                                   value={`${window.location.origin}/register?token=${request.onboardingToken}`}
@@ -307,13 +336,28 @@ export default function BusinessInquiries() {
                               </div>
                             </div>
                           )}
+
+                          {/* Show expired token message */}
+                          {request.status === 'APPROVED' && request.onboardingToken && isTokenExpired(request.tokenExpiresAt) && (
+                            <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                              <div className="flex items-center gap-2">
+                                <AlertCircle className="h-4 w-4 text-orange-600" />
+                                <Label className="text-xs font-medium text-orange-800">
+                                  Registration link has expired. Generate a new link to send.
+                                </Label>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                       <Dialog onOpenChange={() => setGeneratedUrl(null)}>
                         <DialogTrigger asChild>
                           <Button
                             size="sm"
-                            disabled={request.status === 'APPROVED' || generatingToken === request.id}
+                            disabled={
+                              (request.status === 'APPROVED' && !isTokenExpired(request.tokenExpiresAt)) ||
+                              generatingToken === request.id
+                            }
                           >
                             {generatingToken === request.id ? (
                               <>
@@ -323,16 +367,26 @@ export default function BusinessInquiries() {
                             ) : (
                               <>
                                 <Mail className="mr-2 h-4 w-4" />
-                                {request.status === 'APPROVED' ? 'Link Generated' : 'Generate Link'}
+                                {request.status === 'APPROVED' && !isTokenExpired(request.tokenExpiresAt)
+                                  ? 'Link Active'
+                                  : request.status === 'APPROVED' && isTokenExpired(request.tokenExpiresAt)
+                                  ? 'Generate New Link'
+                                  : 'Generate Link'}
                               </>
                             )}
                           </Button>
                         </DialogTrigger>
                         <DialogContent>
                           <DialogHeader>
-                            <DialogTitle>Generate Registration Link</DialogTitle>
+                            <DialogTitle>
+                              {request.status === 'APPROVED' && isTokenExpired(request.tokenExpiresAt)
+                                ? 'Generate New Registration Link'
+                                : 'Generate Registration Link'}
+                            </DialogTitle>
                             <DialogDescription>
-                              Generate a unique registration link for {request.businessName}
+                              {request.status === 'APPROVED' && isTokenExpired(request.tokenExpiresAt)
+                                ? `The previous link has expired. Generate a new registration link for ${request.businessName}`
+                                : `Generate a unique registration link for ${request.businessName}`}
                             </DialogDescription>
                           </DialogHeader>
                           {!generatedUrl ? (

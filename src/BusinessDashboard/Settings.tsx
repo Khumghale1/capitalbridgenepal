@@ -4,10 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Lock, Bell, Trash2, AlertTriangle } from "lucide-react";
+import { Lock, Trash2, AlertTriangle } from "lucide-react";
+import { api } from "@/lib/api";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,23 +22,89 @@ import {
 
 export default function Settings() {
   const { toast } = useToast();
-  const [emailNotifications, setEmailNotifications] = useState(true);
-  const [inquiryAlerts, setInquiryAlerts] = useState(true);
-  const [weeklyReports, setWeeklyReports] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [removalReason, setRemovalReason] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isSubmittingRemoval, setIsSubmittingRemoval] = useState(false);
 
-  const handlePasswordChange = () => {
-    toast({
-      title: "Password Updated!",
-      description: "Your password has been successfully changed.",
-    });
+  const handlePasswordChange = async () => {
+    // Validation
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast({
+        title: "Missing Fields",
+        description: "Please fill in all password fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Passwords Don't Match",
+        description: "New password and confirmation don't match.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword.length < 8) {
+      toast({
+        title: "Password Too Short",
+        description: "Password must be at least 8 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsChangingPassword(true);
+
+      await api.businessProfile.changePassword({ currentPassword, newPassword });
+
+      toast({
+        title: "Password Updated!",
+        description: "Your password has been successfully changed.",
+      });
+
+      // Clear form
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error) {
+      toast({
+        title: "Failed to Update Password",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
-  const handleRemovalRequest = () => {
-    toast({
-      title: "Removal Request Submitted",
-      description: "Your request has been sent to the admin team for review.",
-      variant: "destructive",
-    });
+  const handleRemovalRequest = async () => {
+    try {
+      setIsSubmittingRemoval(true);
+
+      await api.businessProfile.requestRemoval({ reason: removalReason });
+
+      toast({
+        title: "Removal Request Submitted",
+        description: "Your request has been sent to the admin team for review.",
+        variant: "destructive",
+      });
+
+      setRemovalReason("");
+    } catch (error) {
+      toast({
+        title: "Failed to Submit Request",
+        description: error instanceof Error ? error.message : "An error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingRemoval(false);
+    }
   };
 
   return (
@@ -68,6 +134,8 @@ export default function Settings() {
               id="currentPassword"
               type="password"
               placeholder="Enter current password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
             />
           </div>
           <div className="space-y-2">
@@ -75,7 +143,9 @@ export default function Settings() {
             <Input
               id="newPassword"
               type="password"
-              placeholder="Enter new password"
+              placeholder="Enter new password (min 8 characters)"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
             />
           </div>
           <div className="space-y-2">
@@ -84,67 +154,13 @@ export default function Settings() {
               id="confirmPassword"
               type="password"
               placeholder="Confirm new password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
             />
           </div>
-          <Button onClick={handlePasswordChange}>Update Password</Button>
-        </CardContent>
-      </Card>
-
-      {/* Notifications */}
-      <Card className="mb-6">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
-            <CardTitle>Notifications</CardTitle>
-          </div>
-          <CardDescription>
-            Manage how you receive notifications
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label htmlFor="emailNotif">Email Notifications</Label>
-              <p className="text-sm text-muted-foreground">
-                Receive email updates about your account
-              </p>
-            </div>
-            <Switch
-              id="emailNotif"
-              checked={emailNotifications}
-              onCheckedChange={setEmailNotifications}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label htmlFor="inquiryAlerts">Inquiry Alerts</Label>
-              <p className="text-sm text-muted-foreground">
-                Get notified when you receive new investment inquiries
-              </p>
-            </div>
-            <Switch
-              id="inquiryAlerts"
-              checked={inquiryAlerts}
-              onCheckedChange={setInquiryAlerts}
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label htmlFor="weeklyReports">Weekly Reports</Label>
-              <p className="text-sm text-muted-foreground">
-                Receive weekly analytics reports via email
-              </p>
-            </div>
-            <Switch
-              id="weeklyReports"
-              checked={weeklyReports}
-              onCheckedChange={setWeeklyReports}
-            />
-          </div>
-
-          <Button variant="outline">Save Notification Preferences</Button>
+          <Button onClick={handlePasswordChange} disabled={isChangingPassword}>
+            {isChangingPassword ? "Updating..." : "Update Password"}
+          </Button>
         </CardContent>
       </Card>
 
@@ -177,12 +193,14 @@ export default function Settings() {
               id="removalReason"
               placeholder="Please tell us why you want to remove your profile..."
               rows={4}
+              value={removalReason}
+              onChange={(e) => setRemovalReason(e.target.value)}
             />
           </div>
 
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive">
+              <Button variant="destructive" disabled={isSubmittingRemoval}>
                 <Trash2 className="mr-2 h-4 w-4" />
                 Request Removal
               </Button>
@@ -198,8 +216,12 @@ export default function Settings() {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleRemovalRequest} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                  Submit Request
+                <AlertDialogAction
+                  onClick={handleRemovalRequest}
+                  disabled={isSubmittingRemoval}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {isSubmittingRemoval ? "Submitting..." : "Submit Request"}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

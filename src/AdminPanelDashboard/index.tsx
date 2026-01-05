@@ -1,18 +1,103 @@
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Building2,
   Users,
   CheckCircle,
-  XCircle,
   MessageSquare,
   ArrowUpRight,
   Clock,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { AdminPanelDashboardLayout } from "./AdminPanelDashboardLayout";
+import { api } from "@/lib/api";
+import { useNavigate } from "react-router-dom";
+
+interface DashboardStats {
+  totalBusinesses: number;
+  pendingApprovals: number;
+  newInquiries: number;
+  totalInterests: number;
+}
+
+interface PendingBusiness {
+  id: string;
+  businessName: string;
+  sector: string;
+  submittedAt: string;
+}
 
 export default function AdminPanelDashboard() {
+  const navigate = useNavigate();
+  const [stats, setStats] = useState<DashboardStats>({
+    totalBusinesses: 0,
+    pendingApprovals: 0,
+    newInquiries: 0,
+    totalInterests: 0,
+  });
+  const [pendingBusinesses, setPendingBusinesses] = useState<PendingBusiness[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Fetch all data in parallel
+      const [businessesData, pendingData, inquiriesData, interestsData] = await Promise.all([
+        api.businesses.getActive({ limit: 1 }),
+        api.businesses.getPending({ limit: 3 }),
+        api.onboarding.getAll({ limit: 1, status: 'PENDING' }),
+        api.interests.getAll({ limit: 1 }),
+      ]);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const businesses = businessesData as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const pending = pendingData as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const inquiries = inquiriesData as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const interests = interestsData as any;
+
+      setStats({
+        totalBusinesses: businesses.pagination?.total || 0,
+        pendingApprovals: pending.pagination?.total || 0,
+        newInquiries: inquiries.pagination?.total || 0,
+        totalInterests: interests.pagination?.total || 0,
+      });
+
+      setPendingBusinesses(pending.businesses || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load dashboard data');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
   return (
     <AdminPanelDashboardLayout>
       {/* Welcome Section */}
@@ -23,266 +108,181 @@ export default function AdminPanelDashboard() {
         </p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Businesses
-            </CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">156</div>
-            <p className="text-xs text-muted-foreground">
-              +12 this month
-            </p>
-          </CardContent>
-        </Card>
+      {/* Error Alert */}
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Pending Approvals
-            </CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">8</div>
-            <p className="text-xs text-muted-foreground">
-              Requires attention
-            </p>
+      {/* Loading State */}
+      {isLoading ? (
+        <Card className="mb-8">
+          <CardContent className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2 text-muted-foreground">Loading dashboard...</span>
           </CardContent>
         </Card>
+      ) : (
+        <>
+          {/* Stats Grid */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Businesses
+                </CardTitle>
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalBusinesses}</div>
+                <p className="text-xs text-muted-foreground">
+                  Active on platform
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              New Inquiries
-            </CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">23</div>
-            <p className="text-xs text-muted-foreground">
-              +5 this week
-            </p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Pending Approvals
+                </CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.pendingApprovals}</div>
+                <p className="text-xs text-muted-foreground">
+                  Requires attention
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Active Users
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">892</div>
-            <p className="text-xs text-muted-foreground">
-              +45 from last month
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  New Inquiries
+                </CardTitle>
+                <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.newInquiries}</div>
+                <p className="text-xs text-muted-foreground">
+                  Pending onboarding
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Interests
+                </CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalInterests}</div>
+                <p className="text-xs text-muted-foreground">
+                  Investor inquiries
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </>
+      )}
 
       {/* Main Content */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        {/* Pending Approvals */}
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>Pending Approvals</CardTitle>
-            <CardDescription>
-              Businesses waiting for review and approval
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-4 rounded-md border p-4">
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Building2 className="h-6 w-6 text-primary" />
+      {!isLoading && (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+          {/* Pending Approvals */}
+          <Card className="col-span-4">
+            <CardHeader>
+              <CardTitle>Pending Approvals</CardTitle>
+              <CardDescription>
+                Businesses waiting for review and approval
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {pendingBusinesses.length === 0 ? (
+                <div className="text-center py-12">
+                  <CheckCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No pending approvals</p>
                 </div>
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium leading-none">
-                      Tech Innovations Nepal
-                    </p>
-                    <Badge>New</Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Technology • Submitted 2 hours ago
-                  </p>
-                </div>
-                <Button variant="ghost" size="sm">
-                  Review
-                  <ArrowUpRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
+              ) : (
+                <div className="space-y-4">
+                  {pendingBusinesses.map((business) => {
+                    const isRecent = (new Date().getTime() - new Date(business.submittedAt).getTime()) / 3600000 < 24;
 
-              <div className="flex items-center space-x-4 rounded-md border p-4">
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Building2 className="h-6 w-6 text-primary" />
+                    return (
+                      <div key={business.id} className="flex items-center space-x-4 rounded-md border p-4">
+                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Building2 className="h-6 w-6 text-primary" />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium leading-none">
+                              {business.businessName}
+                            </p>
+                            {isRecent && <Badge>New</Badge>}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {business.sector} • Submitted {formatDate(business.submittedAt)}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate('/admin/dashboard/approvals')}
+                        >
+                          Review
+                          <ArrowUpRight className="ml-2 h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium leading-none">
-                      Organic Farms Co.
-                    </p>
-                    <Badge>New</Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Agriculture • Submitted 5 hours ago
-                  </p>
-                </div>
-                <Button variant="ghost" size="sm">
-                  Review
-                  <ArrowUpRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
+              )}
+            </CardContent>
+          </Card>
 
-              <div className="flex items-center space-x-4 rounded-md border p-4">
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Building2 className="h-6 w-6 text-primary" />
-                </div>
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium leading-none">
-                    Himalayan Textiles
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Manufacturing • Submitted 1 day ago
-                  </p>
-                </div>
-                <Button variant="ghost" size="sm">
-                  Review
-                  <ArrowUpRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions */}
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>
-              Common administrative tasks
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button className="w-full" variant="hero">
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Review Approvals
-            </Button>
-            <Button className="w-full" variant="outline">
-              <Building2 className="mr-2 h-4 w-4" />
-              View All Businesses
-            </Button>
-            <Button className="w-full" variant="outline">
-              <MessageSquare className="mr-2 h-4 w-4" />
-              Check Inquiries
-            </Button>
-            <Button className="w-full" variant="outline">
-              <XCircle className="mr-2 h-4 w-4" />
-              Removal Requests
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Recent Activity & Stats */}
-      <div className="grid gap-4 md:grid-cols-2 mt-4">
-        {/* Recent Activity */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>
-              Latest platform activities and changes
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center gap-4 text-sm">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <div className="flex-1">
-                  <p className="font-medium">Business Approved</p>
-                  <p className="text-muted-foreground">Tech Startup Nepal - 1 hour ago</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4 text-sm">
-                <Building2 className="h-4 w-4 text-blue-600" />
-                <div className="flex-1">
-                  <p className="font-medium">New Business Inquiry</p>
-                  <p className="text-muted-foreground">Coffee Export Co. - 3 hours ago</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4 text-sm">
-                <XCircle className="h-4 w-4 text-red-600" />
-                <div className="flex-1">
-                  <p className="font-medium">Removal Request</p>
-                  <p className="text-muted-foreground">Local Handicrafts - 5 hours ago</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4 text-sm">
-                <Users className="h-4 w-4 text-purple-600" />
-                <div className="flex-1">
-                  <p className="font-medium">New Admin Added</p>
-                  <p className="text-muted-foreground">John Doe - 1 day ago</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Platform Stats */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Platform Statistics</CardTitle>
-            <CardDescription>
-              Overview of platform performance
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-green-500" />
-                  <span className="text-sm">Active Businesses</span>
-                </div>
-                <div className="text-sm font-medium">148</div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-yellow-500" />
-                  <span className="text-sm">Pending Approval</span>
-                </div>
-                <div className="text-sm font-medium">8</div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-blue-500" />
-                  <span className="text-sm">Total Investors</span>
-                </div>
-                <div className="text-sm font-medium">892</div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-purple-500" />
-                  <span className="text-sm">Total Inquiries</span>
-                </div>
-                <div className="text-sm font-medium">1,284</div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-orange-500" />
-                  <span className="text-sm">Active Sectors</span>
-                </div>
-                <div className="text-sm font-medium">12</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          {/* Quick Actions */}
+          <Card className="col-span-3">
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+              <CardDescription>
+                Common administrative tasks
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button
+                className="w-full"
+                variant="hero"
+                onClick={() => navigate('/admin/dashboard/approvals')}
+              >
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Review Approvals
+              </Button>
+              <Button
+                className="w-full"
+                variant="outline"
+                onClick={() => navigate('/admin/dashboard/businesses')}
+              >
+                <Building2 className="mr-2 h-4 w-4" />
+                View All Businesses
+              </Button>
+              <Button
+                className="w-full"
+                variant="outline"
+                onClick={() => navigate('/admin/dashboard/inquiries')}
+              >
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Check Inquiries
+              </Button>
+              
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </AdminPanelDashboardLayout>
   );
 }

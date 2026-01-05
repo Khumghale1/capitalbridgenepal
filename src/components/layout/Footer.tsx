@@ -43,7 +43,7 @@ export function Footer() {
           <div className="lg:col-span-2">
             <Link to="/" className="mb-4 flex items-center gap-2">
               <img
-                src="/images/mainlogo.png"
+                src="/images/mainlogo.svg"
                 alt="AarthiQ Logo"
                 className="h-26 w-26 md:h-32 md:w-35"
               />
