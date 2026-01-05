@@ -17,44 +17,13 @@ import { errorHandler } from './middlewares/errorHandler.middleware';
 dotenv.config();
 
 const app: Application = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT ;
 
 // Middleware
-// Configure CORS to allow specific origins
-const allowedOrigins = [
-  'http://localhost:8080',     // Vite dev server
-  'http://localhost:3000',     // Alternative local port
-  'http://localhost:4173',     // Vite preview
-  process.env.FRONTEND_URL,    // Production frontend (Vercel)
-  'https://capitalbridgenepal.onrender.com', // Backend itself (for testing)
-].filter(Boolean); // Remove undefined values
-
-// Log CORS configuration on startup
-console.log('CORS Configuration:');
-console.log('Allowed origins:', allowedOrigins);
-console.log('FRONTEND_URL env var:', process.env.FRONTEND_URL);
-
+// Configure CORS
 app.use(cors({
-  origin: (origin, callback) => {
-    // Log incoming requests for debugging
-    console.log('CORS request from origin:', origin);
-
-    // Allow requests with no origin (like mobile apps, Postman, etc.)
-    if (!origin) {
-      console.log('✓ Allowing request with no origin');
-      return callback(null, true);
-    }
-
-    if (allowedOrigins.includes(origin)) {
-      console.log('✓ Origin allowed:', origin);
-      callback(null, true);
-    } else {
-      console.log('✗ Origin rejected:', origin);
-      console.log('  Allowed origins:', allowedOrigins);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true, // Allow cookies and auth headers
+  origin: process.env.FRONTEND_URL,
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));

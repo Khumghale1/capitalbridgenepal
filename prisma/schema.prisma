@@ -246,3 +246,19 @@ model BusinessOnboardingRequest {
   @@index([submittedAt(sort: Desc)])
   @@map("business_onboarding_requests")
 }
+
+// Business Removal Requests (Businesses requesting profile removal)
+model BusinessRemovalRequest {
+  id              String   @id @default(uuid()) @db.Uuid
+  businessId      String   @map("business_id") @db.Uuid
+  reason          String?  @db.Text
+  status          String   @default("PENDING") @db.VarChar(50) // PENDING, APPROVED, REJECTED
+  requestedAt     DateTime @default(now()) @map("requested_at")
+  reviewedAt      DateTime? @map("reviewed_at")
+  reviewedBy      String?  @map("reviewed_by") @db.Uuid // Admin ID who reviewed
+
+  @@index([businessId])
+  @@index([status])
+  @@index([requestedAt(sort: Desc)])
+  @@map("business_removal_requests")
+}

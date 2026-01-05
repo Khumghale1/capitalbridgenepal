@@ -460,3 +460,127 @@ export const toggleBusinessActive = async (businessId: string) => {
 
   return updated;
 };
+
+/**
+ * List removal requests (Admin)
+ */
+export const listRemovalRequests = async (params?: {
+  page?: number;
+  limit?: number;
+}) => {
+  const page = params?.page || 1;
+  const limit = params?.limit || 50;
+  const skip = (page - 1) * limit;
+
+  const [requests, total] = await Promise.all([
+    prisma.businessRemovalRequest.findMany({
+      skip,
+      take: limit,
+      include: {
+        business: {
+          select: {
+            id: true,
+            name: true,
+            contactEmail: true,
+            contactPhone: true,
+            isActive: true
+          }
+        }
+      },
+      orderBy: {
+        requestedAt: 'desc'
+      }
+    }),
+    prisma.businessRemovalRequest.count()
+  ]);
+
+  return {
+    requests,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit)
+    }
+  };
+};
+
+/**
+ * Approve removal request and deactivate business (Admin)
+ */
+export const approveRemovalRequest = async (requestId: string) => {
+  // Get the removal request
+  const request = await prisma.businessRemovalRequest.findUnique({
+    where: { id: requestId },
+    include: {
+      business: {
+        include: {
+          businessLogin: true
+        }
+      }
+    }
+  });
+
+  if (!request) {
+    throw new NotFoundError('Removal request not found');
+  }
+
+  if (request.status !== 'PENDING') {
+    throw new ForbiddenError('This request has already been reviewed');
+  }
+
+  // Update request status and deactivate the business
+  const [updatedRequest] = await prisma.$transaction([
+    // Update removal request status
+    prisma.businessRemovalRequest.update({
+      where: { id: requestId },
+      data: {
+        status: 'APPROVED',
+        reviewedAt: new Date()
+      }
+    }),
+    // Deactivate the business
+    prisma.business.update({
+      where: { id: request.businessId },
+      data: {
+        isActive: false,
+        businessLogin: {
+          update: {
+            isActive: false
+          }
+        }
+      }
+    })
+  ]);
+
+  return updatedRequest;
+};
+
+/**
+ * Reject removal request (Admin)
+ */
+export const rejectRemovalRequest = async (requestId: string) => {
+  // Get the removal request
+  const request = await prisma.businessRemovalRequest.findUnique({
+    where: { id: requestId }
+  });
+
+  if (!request) {
+    throw new NotFoundError('Removal request not found');
+  }
+
+  if (request.status !== 'PENDING') {
+    throw new ForbiddenError('This request has already been reviewed');
+  }
+
+  // Update request status
+  const updatedRequest = await prisma.businessRemovalRequest.update({
+    where: { id: requestId },
+    data: {
+      status: 'REJECTED',
+      reviewedAt: new Date()
+    }
+  });
+
+  return updatedRequest;
+};

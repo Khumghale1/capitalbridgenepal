@@ -8,7 +8,10 @@ import {
   listAllBusinessesForAdminHandler,
   getBusinessDetailsByIdForAdminHandler,
   updateBusinessHandler,
-  toggleBusinessActiveHandler
+  toggleBusinessActiveHandler,
+  listRemovalRequestsHandler,
+  approveRemovalRequestHandler,
+  rejectRemovalRequestHandler
 } from '../controllers/business.controller';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 import { validate } from '../middlewares/validation.middleware';
@@ -20,7 +23,10 @@ import {
   getBusinessByIdSchema,
   listAllBusinessesForAdminSchema,
   updateBusinessSchema,
-  toggleBusinessActiveSchema
+  toggleBusinessActiveSchema,
+  listRemovalRequestsSchema,
+  approveRemovalRequestSchema,
+  rejectRemovalRequestSchema
 } from '../validators/business.validator';
 
 const router = Router();
@@ -99,6 +105,45 @@ router.put(
   authorize('ADMIN'),
   validate(toggleBusinessActiveSchema),
   toggleBusinessActiveHandler
+);
+
+/**
+ * @route   GET /api/businesses/removal-requests
+ * @desc    List all removal requests
+ * @access  Private (Admin)
+ */
+router.get(
+  '/removal-requests',
+  authenticate,
+  authorize('ADMIN'),
+  validate(listRemovalRequestsSchema),
+  listRemovalRequestsHandler
+);
+
+/**
+ * @route   PUT /api/businesses/removal-requests/:id/approve
+ * @desc    Approve removal request and deactivate business
+ * @access  Private (Admin)
+ */
+router.put(
+  '/removal-requests/:id/approve',
+  authenticate,
+  authorize('ADMIN'),
+  validate(approveRemovalRequestSchema),
+  approveRemovalRequestHandler
+);
+
+/**
+ * @route   PUT /api/businesses/removal-requests/:id/reject
+ * @desc    Reject removal request
+ * @access  Private (Admin)
+ */
+router.put(
+  '/removal-requests/:id/reject',
+  authenticate,
+  authorize('ADMIN'),
+  validate(rejectRemovalRequestSchema),
+  rejectRemovalRequestHandler
 );
 
 /**

@@ -108,3 +108,31 @@ export const toggleBusinessActiveSchema = z.object({
     id: z.string().uuid('Invalid business ID')
   })
 });
+
+/**
+ * List removal requests (Admin)
+ */
+export const listRemovalRequestsSchema = z.object({
+  query: z.object({
+    page: z.string().regex(/^\d+$/).transform(Number).optional(),
+    limit: z.string().regex(/^\d+$/).transform(Number).optional()
+  })
+});
+
+/**
+ * Approve removal request (Admin)
+ */
+export const approveRemovalRequestSchema = z.object({
+  params: z.object({
+    id: z.string().uuid('Invalid request ID')
+  })
+});
+
+/**
+ * Reject removal request (Admin)
+ */
+export const rejectRemovalRequestSchema = z.object({
+  params: z.object({
+    id: z.string().uuid('Invalid request ID')
+  })
+});

@@ -8,7 +8,10 @@ import {
   listAllBusinessesForAdmin,
   getBusinessDetailsByIdForAdmin,
   updateBusiness,
-  toggleBusinessActive
+  toggleBusinessActive,
+  listRemovalRequests,
+  approveRemovalRequest,
+  rejectRemovalRequest
 } from '../services/business.service';
 
 /**
@@ -216,6 +219,72 @@ export const toggleBusinessActiveHandler = async (
         name: business.name,
         isActive: business.isActive
       }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/businesses/removal-requests
+ * List all removal requests (Admin)
+ */
+export const listRemovalRequestsHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { page, limit } = req.query;
+    const result = await listRemovalRequests({
+      page: page ? parseInt(page as string) : undefined,
+      limit: limit ? parseInt(limit as string) : undefined
+    });
+
+    return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PUT /api/businesses/removal-requests/:id/approve
+ * Approve removal request and deactivate business (Admin)
+ */
+export const approveRemovalRequestHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    const result = await approveRemovalRequest(id);
+
+    return res.status(200).json({
+      message: 'Removal request approved and business deactivated',
+      request: result
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PUT /api/businesses/removal-requests/:id/reject
+ * Reject removal request (Admin)
+ */
+export const rejectRemovalRequestHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { id } = req.params;
+    const result = await rejectRemovalRequest(id);
+
+    return res.status(200).json({
+      message: 'Removal request rejected',
+      request: result
     });
   } catch (error) {
     next(error);

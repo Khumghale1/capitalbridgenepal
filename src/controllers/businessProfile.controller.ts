@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import {
   getOwnBusinessProfile,
-  updateOwnBusinessProfile
+  updateOwnBusinessProfile,
+  changeBusinessPassword,
+  requestBusinessRemoval
 } from '../services/businessProfile.service';
 import { getBusinessInterests } from '../services/interest.service';
 
@@ -77,6 +79,58 @@ export const getOwnBusinessInterestsHandler = async (
     });
 
     return res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * PUT /api/business/change-password
+ * Change business account password
+ */
+export const changePasswordHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { currentPassword, newPassword } = req.body;
+
+    await changeBusinessPassword(req.user.id, currentPassword, newPassword);
+
+    return res.status(200).json({
+      message: 'Password updated successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/business/request-removal
+ * Request business profile removal
+ */
+export const requestRemovalHandler = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const { reason } = req.body;
+
+    await requestBusinessRemoval(req.user.id, reason);
+
+    return res.status(200).json({
+      message: 'Removal request submitted successfully'
+    });
   } catch (error) {
     next(error);
   }

@@ -2,13 +2,17 @@ import { Router } from 'express';
 import {
   getOwnProfileHandler,
   updateOwnProfileHandler,
-  getOwnBusinessInterestsHandler
+  getOwnBusinessInterestsHandler,
+  changePasswordHandler,
+  requestRemovalHandler
 } from '../controllers/businessProfile.controller';
 import { authenticate, authorize } from '../middlewares/auth.middleware';
 import { validate } from '../middlewares/validation.middleware';
 import {
   updateBusinessProfileSchema,
-  listInterestsSchema
+  listInterestsSchema,
+  changePasswordSchema,
+  requestRemovalSchema
 } from '../validators/businessProfile.validator';
 
 const router = Router();
@@ -44,6 +48,28 @@ router.get(
   '/interests',
   validate(listInterestsSchema),
   getOwnBusinessInterestsHandler
+);
+
+/**
+ * @route   PUT /api/business/change-password
+ * @desc    Change business account password
+ * @access  Private (Business)
+ */
+router.put(
+  '/change-password',
+  validate(changePasswordSchema),
+  changePasswordHandler
+);
+
+/**
+ * @route   POST /api/business/request-removal
+ * @desc    Request business profile removal
+ * @access  Private (Business)
+ */
+router.post(
+  '/request-removal',
+  validate(requestRemovalSchema),
+  requestRemovalHandler
 );
 
 export default router;

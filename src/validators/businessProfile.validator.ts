@@ -107,3 +107,27 @@ export const listInterestsSchema = z.object({
     limit: z.string().regex(/^\d+$/).transform(Number).optional()
   })
 });
+
+/**
+ * Change password validation
+ */
+export const changePasswordSchema = z.object({
+  body: z.object({
+    currentPassword: z.string()
+      .min(1, 'Current password is required'),
+    newPassword: z.string()
+      .min(8, 'New password must be at least 8 characters')
+      .max(100, 'Password is too long')
+  })
+});
+
+/**
+ * Request removal validation
+ */
+export const requestRemovalSchema = z.object({
+  body: z.object({
+    reason: z.string()
+      .max(500, 'Reason is too long')
+      .optional()
+  })
+});
