@@ -4,6 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BusinessCard } from "@/components/business/BusinessCard";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   MapPin,
   Globe,
   Mail,
@@ -17,6 +24,7 @@ import {
   ShieldCheck,
   Lock,
   ArrowLeft,
+  Info,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +44,12 @@ interface Business {
   fullDescription?: string;
   investmentCapacityMin: number;
   investmentCapacityMax: number;
+  minimumInvestmentUnits?: number;
+  maximumInvestmentUnits?: number;
+  pricePerUnit?: number;
+  expectedReturnOptions?: string;
+  estimatedMarketValuation?: number;
+  ipoTimeHorizon?: string;
   paidUpCapital: number;
   yearEstablished: number;
   businessType: string;
@@ -66,11 +80,13 @@ export default function BusinessDetail() {
   const [business, setBusiness] = useState<Business | null>(null);
   const [relatedBusinesses, setRelatedBusinesses] = useState<Business[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [openModal, setOpenModal] = useState<string | null>(null);
   const [interestFormData, setInterestFormData] = useState({
     investorName: "",
     email: "",
     phoneNumber: "",
-    remarks: "",
+    message: "",
+    hasConsent: false,
   });
 
   useEffect(() => {
@@ -153,7 +169,8 @@ export default function BusinessDetail() {
         investorName: interestFormData.investorName,
         phoneNumber: interestFormData.phoneNumber,
         email: interestFormData.email,
-        remarks: interestFormData.remarks || undefined,
+        message: interestFormData.message || undefined,
+        hasConsent: interestFormData.hasConsent,
       });
 
       toast({
@@ -166,7 +183,8 @@ export default function BusinessDetail() {
         investorName: "",
         email: "",
         phoneNumber: "",
-        remarks: "",
+        message: "",
+        hasConsent: false,
       });
     } catch (error) {
       toast({
@@ -300,6 +318,320 @@ export default function BusinessDetail() {
                   )}
                 </div>
               </div>
+
+              {/* Key Investment Parameters */}
+              {(business.minimumInvestmentUnits || business.maximumInvestmentUnits || business.pricePerUnit || business.expectedReturnOptions || business.estimatedMarketValuation || business.ipoTimeHorizon) && (
+                <div className="mb-8 rounded-xl border border-border bg-card p-6 md:p-8">
+                  <h2 className="mb-4 text-xl font-bold text-foreground">
+                    Key Investment Parameters
+                  </h2>
+                  <p className="mb-4 text-sm text-muted-foreground">
+                    Click on any parameter to view detailed information
+                  </p>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {business.minimumInvestmentUnits && (
+                      <div
+                        onClick={() => setOpenModal('minUnits')}
+                        className="rounded-lg border border-primary/20 bg-primary/5 p-4 transition-all hover:border-primary/40 hover:shadow-md cursor-pointer group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-muted-foreground">Minimum Investment Units</p>
+                          <Info className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        <p className="mt-1 text-2xl font-bold text-primary">{business.minimumInvestmentUnits.toLocaleString()}</p>
+                      </div>
+                    )}
+                    {business.maximumInvestmentUnits && (
+                      <div
+                        onClick={() => setOpenModal('maxUnits')}
+                        className="rounded-lg border border-primary/20 bg-primary/5 p-4 transition-all hover:border-primary/40 hover:shadow-md cursor-pointer group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-muted-foreground">Maximum Investment Units</p>
+                          <Info className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        <p className="mt-1 text-2xl font-bold text-primary">{business.maximumInvestmentUnits.toLocaleString()}</p>
+                      </div>
+                    )}
+                    {business.pricePerUnit && (
+                      <div
+                        onClick={() => setOpenModal('pricePerUnit')}
+                        className="rounded-lg border border-primary/20 bg-primary/5 p-4 transition-all hover:border-primary/40 hover:shadow-md cursor-pointer group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-muted-foreground">Price per Unit</p>
+                          <Info className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        <p className="mt-1 text-2xl font-bold text-primary">NPR {formatCurrency(business.pricePerUnit)}</p>
+                      </div>
+                    )}
+                    {business.expectedReturnOptions && (
+                      <div
+                        onClick={() => setOpenModal('expectedReturns')}
+                        className="rounded-lg border border-primary/20 bg-primary/5 p-4 transition-all hover:border-primary/40 hover:shadow-md cursor-pointer group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-muted-foreground">Expected Return Options</p>
+                          <Info className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        <p className="mt-1 text-base font-semibold text-primary">{business.expectedReturnOptions}</p>
+                      </div>
+                    )}
+                    {business.estimatedMarketValuation && (
+                      <div
+                        onClick={() => setOpenModal('valuation')}
+                        className="rounded-lg border border-primary/20 bg-primary/5 p-4 transition-all hover:border-primary/40 hover:shadow-md cursor-pointer group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-muted-foreground">Estimated Market Valuation</p>
+                          <Info className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        <p className="mt-1 text-2xl font-bold text-primary">NPR {formatCurrency(business.estimatedMarketValuation)}</p>
+                        <p className="mt-2 text-xs text-muted-foreground italic">*Based on information provided by the business</p>
+                      </div>
+                    )}
+                    {business.ipoTimeHorizon && (
+                      <div
+                        onClick={() => setOpenModal('ipoTimeline')}
+                        className="rounded-lg border border-primary/20 bg-primary/5 p-4 transition-all hover:border-primary/40 hover:shadow-md cursor-pointer group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-muted-foreground">Time Horizon for IPO</p>
+                          <Info className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        <p className="mt-1 text-base font-semibold text-primary">{business.ipoTimeHorizon}</p>
+                      </div>
+                    )}
+                  </div>
+                  <p className="mt-4 text-xs text-muted-foreground">
+                    <ShieldCheck className="inline h-3 w-3 mr-1" />
+                    Estimated valuation is based on information provided by the business. The platform does not influence investment decisions.
+                  </p>
+                </div>
+              )}
+
+              {/* Investment Parameter Modals */}
+              <Dialog open={openModal === 'minUnits'} onOpenChange={() => setOpenModal(null)}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Minimum Investment Units</DialogTitle>
+                    <DialogDescription>
+                      Understanding the minimum investment requirement
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="rounded-lg bg-primary/5 p-4 border border-primary/20">
+                      <p className="text-3xl font-bold text-primary">{business?.minimumInvestmentUnits?.toLocaleString()} units</p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="font-semibold">What does this mean?</h4>
+                      <p className="text-sm text-muted-foreground">
+                        This is the smallest number of investment units you can purchase from this business.
+                        Each unit represents a share of ownership in the company.
+                      </p>
+                    </div>
+                    {business?.pricePerUnit && (
+                      <div className="space-y-2">
+                        <h4 className="font-semibold">Minimum Investment Amount</h4>
+                        <p className="text-sm text-muted-foreground">
+                          At NPR {formatCurrency(business.pricePerUnit)} per unit, your minimum investment would be:
+                        </p>
+                        <p className="text-2xl font-bold text-primary">
+                          NPR {formatCurrency((business.minimumInvestmentUnits || 0) * business.pricePerUnit)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={openModal === 'maxUnits'} onOpenChange={() => setOpenModal(null)}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Maximum Investment Units</DialogTitle>
+                    <DialogDescription>
+                      Understanding the maximum investment limit
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="rounded-lg bg-primary/5 p-4 border border-primary/20">
+                      <p className="text-3xl font-bold text-primary">{business?.maximumInvestmentUnits?.toLocaleString()} units</p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="font-semibold">What does this mean?</h4>
+                      <p className="text-sm text-muted-foreground">
+                        This is the maximum number of investment units a single investor can purchase from this business.
+                        This limit helps ensure diverse ownership and prevents concentration of control.
+                      </p>
+                    </div>
+                    {business?.pricePerUnit && (
+                      <div className="space-y-2">
+                        <h4 className="font-semibold">Maximum Investment Amount</h4>
+                        <p className="text-sm text-muted-foreground">
+                          At NPR {formatCurrency(business.pricePerUnit)} per unit, your maximum investment would be:
+                        </p>
+                        <p className="text-2xl font-bold text-primary">
+                          NPR {formatCurrency((business.maximumInvestmentUnits || 0) * business.pricePerUnit)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={openModal === 'pricePerUnit'} onOpenChange={() => setOpenModal(null)}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Price per Unit</DialogTitle>
+                    <DialogDescription>
+                      The cost of each investment unit
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="rounded-lg bg-primary/5 p-4 border border-primary/20">
+                      <p className="text-3xl font-bold text-primary">NPR {business?.pricePerUnit ? formatCurrency(business.pricePerUnit) : 'N/A'}</p>
+                      <p className="text-sm text-muted-foreground mt-1">per unit</p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="font-semibold">What does this mean?</h4>
+                      <p className="text-sm text-muted-foreground">
+                        This is the price you pay for each investment unit. Multiply this by the number of units you want to purchase to calculate your total investment amount.
+                      </p>
+                    </div>
+                    {business?.minimumInvestmentUnits && business?.maximumInvestmentUnits && (
+                      <div className="space-y-2">
+                        <h4 className="font-semibold">Investment Range</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="rounded-lg bg-secondary/50 p-3">
+                            <p className="text-xs text-muted-foreground">Minimum</p>
+                            <p className="text-lg font-bold text-foreground">
+                              NPR {formatCurrency(business.minimumInvestmentUnits * (business.pricePerUnit || 0))}
+                            </p>
+                          </div>
+                          <div className="rounded-lg bg-secondary/50 p-3">
+                            <p className="text-xs text-muted-foreground">Maximum</p>
+                            <p className="text-lg font-bold text-foreground">
+                              NPR {formatCurrency(business.maximumInvestmentUnits * (business.pricePerUnit || 0))}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={openModal === 'expectedReturns'} onOpenChange={() => setOpenModal(null)}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Expected Return Options</DialogTitle>
+                    <DialogDescription>
+                      Projected returns on your investment
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="rounded-lg bg-primary/5 p-4 border border-primary/20">
+                      <p className="text-2xl font-bold text-primary">{business?.expectedReturnOptions}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="font-semibold">What does this mean?</h4>
+                      <p className="text-sm text-muted-foreground">
+                        This represents the anticipated financial return on your investment. Returns may come in the form of:
+                      </p>
+                      <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 ml-2">
+                        <li>Dividends (regular profit sharing)</li>
+                        <li>Capital appreciation (increase in share value)</li>
+                        <li>IPO exit (selling shares during public offering)</li>
+                        <li>Buyback opportunities</li>
+                      </ul>
+                    </div>
+                    <div className="rounded-lg bg-yellow-50 border border-yellow-200 p-4">
+                      <p className="text-xs text-yellow-800">
+                        <ShieldCheck className="inline h-3 w-3 mr-1" />
+                        <strong>Disclaimer:</strong> Expected returns are projections and not guarantees. Actual returns may vary based on business performance and market conditions.
+                      </p>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={openModal === 'valuation'} onOpenChange={() => setOpenModal(null)}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Estimated Market Valuation</DialogTitle>
+                    <DialogDescription>
+                      Current estimated worth of the business
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="rounded-lg bg-primary/5 p-4 border border-primary/20">
+                      <p className="text-3xl font-bold text-primary">
+                        NPR {business?.estimatedMarketValuation ? formatCurrency(business.estimatedMarketValuation) : 'N/A'}
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="font-semibold">What does this mean?</h4>
+                      <p className="text-sm text-muted-foreground">
+                        This is the estimated total market value of the business based on various factors including:
+                      </p>
+                      <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 ml-2">
+                        <li>Current revenue and profitability</li>
+                        <li>Growth potential and market size</li>
+                        <li>Assets and intellectual property</li>
+                        <li>Industry benchmarks and comparables</li>
+                        <li>Future projections</li>
+                      </ul>
+                    </div>
+                    <div className="rounded-lg bg-yellow-50 border border-yellow-200 p-4">
+                      <p className="text-xs text-yellow-800">
+                        <ShieldCheck className="inline h-3 w-3 mr-1" />
+                        <strong>Important:</strong> This valuation is based on information provided by the business.
+                        The platform does not influence investment decisions. We recommend conducting your own due diligence
+                        and consulting with financial advisors before investing.
+                      </p>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={openModal === 'ipoTimeline'} onOpenChange={() => setOpenModal(null)}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Time Horizon for IPO</DialogTitle>
+                    <DialogDescription>
+                      Expected timeline for public listing
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="rounded-lg bg-primary/5 p-4 border border-primary/20">
+                      <p className="text-2xl font-bold text-primary">{business?.ipoTimeHorizon}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="font-semibold">What does this mean?</h4>
+                      <p className="text-sm text-muted-foreground">
+                        This is the estimated timeframe for the company to go public (Initial Public Offering).
+                        An IPO is when a private company offers its shares to the public for the first time on a stock exchange.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="font-semibold">Why is this important?</h4>
+                      <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 ml-2">
+                        <li>IPO provides liquidity - you can sell your shares on the open market</li>
+                        <li>Potentially realize capital gains from share price appreciation</li>
+                        <li>Increased transparency through public reporting requirements</li>
+                        <li>Greater visibility and credibility for the company</li>
+                      </ul>
+                    </div>
+                    <div className="rounded-lg bg-yellow-50 border border-yellow-200 p-4">
+                      <p className="text-xs text-yellow-800">
+                        <ShieldCheck className="inline h-3 w-3 mr-1" />
+                        <strong>Note:</strong> IPO timelines are estimates and subject to change based on market conditions,
+                        regulatory requirements, and company performance. There is no guarantee an IPO will occur.
+                      </p>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
 
               {/* Investment Opportunity */}
               <div className="mb-8 rounded-xl border border-border bg-card p-6 md:p-8">
@@ -481,8 +813,8 @@ export default function BusinessDetail() {
                       </label>
                       <textarea
                         rows={3}
-                        value={interestFormData.remarks}
-                        onChange={(e) => setInterestFormData({ ...interestFormData, remarks: e.target.value })}
+                        value={interestFormData.message}
+                        onChange={(e) => setInterestFormData({ ...interestFormData, message: e.target.value })}
                         className="w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                         placeholder="Tell us about your investment interest..."
                         disabled={isSubmitting}
@@ -492,6 +824,8 @@ export default function BusinessDetail() {
                       <input
                         type="checkbox"
                         required
+                        checked={interestFormData.hasConsent}
+                        onChange={(e) => setInterestFormData({ ...interestFormData, hasConsent: e.target.checked })}
                         className="mt-1 rounded border-input"
                         disabled={isSubmitting}
                       />

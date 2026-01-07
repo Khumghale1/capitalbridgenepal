@@ -18,7 +18,7 @@ export function Header() {
           className="absolute left-0 flex items-center gap-2 transition-opacity hover:opacity-80"
         >
           <img
-            src="/images/mainlogo.svg"
+            src="/images/mainlogo.png"
             alt="AarthiQ Logo"
             className="h-26 w-26 md:h-32 md:w-35"
           />

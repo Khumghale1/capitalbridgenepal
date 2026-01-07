@@ -248,10 +248,10 @@ export default function Profile() {
       <Card className="mb-6">
         <CardContent className="pt-6">
           <div className="flex items-start gap-6">
-            <Avatar className="h-24 w-24">
+            <Avatar className="h-24 w-24 shrink-0">
               <AvatarImage src={businessData?.logoUrl || ""} alt="Business Logo" />
-              <AvatarFallback className="text-2xl">
-                <Building2 className="h-12 w-12" />
+              <AvatarFallback className="bg-primary/10">
+                <Building2 className="h-10 w-10 text-primary" />
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">

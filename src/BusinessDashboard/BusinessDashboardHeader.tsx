@@ -22,7 +22,7 @@ export function BusinessDashboardHeader() {
 
   return (
     <header className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-16 items-center justify-end gap-4 px-6 lg:ml-64">
+      <div className="flex h-16 items-center justify-end gap-4 px-6">
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

@@ -162,9 +162,9 @@ export default function BusinessDashboard() {
                       <p className="text-sm text-muted-foreground">
                         {interest.email} • {interest.phoneNumber}
                       </p>
-                      {interest.remarks && (
+                      {interest.message && (
                         <p className="text-sm text-muted-foreground">
-                          "{interest.remarks}"
+                          "{interest.message}"
                         </p>
                       )}
                     </div>

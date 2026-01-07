@@ -31,9 +31,11 @@ export function AdminPanelDashboardSidebar() {
       {/* Logo */}
       <div className="flex h-16 items-center px-6 border-b">
         <Link to="/" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <Shield className="h-5 w-5 text-primary-foreground" />
-          </div>
+          <img
+            src="/images/mainlogo.png"
+            alt="AarthiQ Logo"
+            className="h-12 w-12"
+          />
           <span className="font-bold text-lg">Admin <span className="text-green-600">Panel</span></span>
         </Link>
       </div>

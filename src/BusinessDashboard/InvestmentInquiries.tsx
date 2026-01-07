@@ -12,7 +12,7 @@ interface Interest {
   investorName: string;
   email: string;
   phoneNumber: string;
-  remarks: string | null;
+  message: string | null;
   submittedAt: string;
 }
 
@@ -186,9 +186,9 @@ export default function InvestmentInquiries() {
                             </div>
                           </div>
 
-                          {interest.remarks && (
+                          {interest.message && (
                             <div className="mt-2 bg-secondary/50 rounded p-2">
-                              <p className="text-sm text-muted-foreground italic">"{interest.remarks}"</p>
+                              <p className="text-sm text-muted-foreground italic">"{interest.message}"</p>
                             </div>
                           )}
 

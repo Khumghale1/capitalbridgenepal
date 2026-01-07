@@ -65,7 +65,8 @@ export const api = {
       investorName: string;
       phoneNumber: string;
       email: string;
-      remarks?: string;
+      message?: string;
+      hasConsent?: boolean;
     }) => {
       return apiRequest('/api/interests', {
         method: 'POST',

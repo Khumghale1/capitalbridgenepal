@@ -29,15 +29,17 @@ export function BusinessDashboardSidebar() {
       {/* Logo */}
       <div className="flex h-16 items-center px-6 border-b">
         <Link to="/" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-lg">AQ</span>
-          </div>
-          <span className="font-bold text-lg">Aarthi<span className="text-green-600">Q</span></span>
+          <img
+            src="/images/mainlogo.png"
+            alt="AarthiQ Logo"
+            className="h-12 w-12"
+          />
+          <span className="font-bold text-lg">Business <span className="text-green-600">Dashboard</span></span>
         </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-1">
+      <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
         {navigation.map((item) => {
           const isActive = location.pathname === item.href;
           return (
@@ -61,15 +63,14 @@ export function BusinessDashboardSidebar() {
       {/* Bottom Section */}
       <div className="p-4 space-y-2">
         <Separator className="mb-4" />
-        <Link to="/business/dashboard/settings">
-          <Button
-            variant="ghost"
-            className="w-full justify-start gap-3 text-muted-foreground"
-          >
-            <Settings className="h-5 w-5" />
-            Settings
-          </Button>
-        </Link>
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-3 text-muted-foreground"
+          onClick={() => navigate("/business/dashboard/settings")}
+        >
+          <Settings className="h-5 w-5" />
+          Settings
+        </Button>
         <Button
           variant="ghost"
           className="w-full justify-start gap-3 text-muted-foreground"

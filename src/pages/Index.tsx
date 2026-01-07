@@ -187,9 +187,9 @@ export default function Index() {
       <section className="relative overflow-hidden bg-gradient-subtle min-h-screen flex items-center">
         {/* Background Image */}
         <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-15"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat "
           style={{
-            backgroundImage: 'url(/images/background2.png)',
+            backgroundImage: 'url(/images/HeroImage-website.png)',
             backgroundSize: 'cover',
             backgroundPosition: 'center center'
           }}

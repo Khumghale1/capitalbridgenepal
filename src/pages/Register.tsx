@@ -72,6 +72,14 @@ export default function Register() {
     useOfFunds: "",
     revenueModel: "",
 
+    // Investment Parameters
+    minimumInvestmentUnits: "",
+    maximumInvestmentUnits: "",
+    pricePerUnit: "",
+    expectedReturnOptions: "",
+    estimatedMarketValuation: "",
+    ipoTimeHorizon: "",
+
     // Social Media
     linkedin: "",
     facebook: "",
@@ -82,6 +90,9 @@ export default function Register() {
     confirmPassword: "",
     acceptTerms: false,
   });
+
+  // Validation errors state
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Validate token on mount
   useEffect(() => {
@@ -141,8 +152,100 @@ export default function Register() {
     validateToken();
   }, [searchParams, navigate]);
 
+  // Validation functions
+  const validateEmail = (email: string): string | null => {
+    if (!email) return null;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return "Please enter a valid email address";
+    }
+    return null;
+  };
+
+  const validatePhone = (phone: string): string | null => {
+    if (!phone) return null;
+    const cleanPhone = phone.replace(/[\s\-\(\)]/g, "");
+    if (cleanPhone.length < 10) {
+      return "Phone number must be at least 10 digits";
+    }
+    if (!/^\+?[0-9]+$/.test(cleanPhone)) {
+      return "Phone number can only contain digits, +, spaces, hyphens, and parentheses";
+    }
+    return null;
+  };
+
+  const validateURL = (url: string): string | null => {
+    if (!url) return null;
+    try {
+      new URL(url);
+      return null;
+    } catch {
+      return "Please enter a valid URL (e.g., https://example.com)";
+    }
+  };
+
+  const validatePasswordMatch = (password: string, confirmPassword: string): string | null => {
+    if (!confirmPassword) return null;
+    if (password !== confirmPassword) {
+      return "Passwords do not match";
+    }
+    return null;
+  };
+
+  const validatePasswordStrength = (password: string): string | null => {
+    if (!password) return null;
+    if (password.length < 8) {
+      return "Password must be at least 8 characters long";
+    }
+    return null;
+  };
+
+  // Field validation on blur
+  const validateField = (field: string, value: string | boolean) => {
+    let error: string | null = null;
+
+    switch (field) {
+      case "email":
+        error = validateEmail(value as string);
+        break;
+      case "phone":
+        error = validatePhone(value as string);
+        break;
+      case "website":
+      case "linkedin":
+      case "facebook":
+      case "twitter":
+        error = validateURL(value as string);
+        break;
+      case "password":
+        error = validatePasswordStrength(value as string);
+        break;
+      case "confirmPassword":
+        error = validatePasswordMatch(formData.password, value as string);
+        break;
+    }
+
+    if (error) {
+      setErrors((prev) => ({ ...prev, [field]: error }));
+    } else {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -157,31 +260,24 @@ export default function Register() {
       return;
     }
 
-    // Validate passwords match
-    if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Password Mismatch",
-        description: "Password and Confirm Password do not match.",
-        variant: "destructive",
-      });
-      return;
+    // Validate all tabs before submission
+    const tabsToValidate = ["company", "contact", "business", "authentication"];
+    let hasErrors = false;
+
+    for (const tab of tabsToValidate) {
+      if (!validateTab(tab)) {
+        hasErrors = true;
+        // Switch to the first tab with errors
+        setCurrentTab(tab);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        break;
+      }
     }
 
-    // Validate password length
-    if (formData.password.length < 8) {
+    if (hasErrors) {
       toast({
-        title: "Weak Password",
-        description: "Password must be at least 8 characters long.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate terms acceptance
-    if (!formData.acceptTerms) {
-      toast({
-        title: "Terms Required",
-        description: "You must accept the Terms and Conditions to register.",
+        title: "Validation Error",
+        description: "Please fill in all required fields correctly before submitting.",
         variant: "destructive",
       });
       return;
@@ -241,14 +337,107 @@ export default function Register() {
   ];
 
   const companySizes = [
-    "1-10 employees",
-    "11-50 employees",
-    "51-200 employees",
-    "201-500 employees",
-    "500+ employees",
+    "1–5 Employees",
+    "6–10 Employees",
+    "11–25 Employees",
+    "26–50 Employees",
+    "51–100 Employees",
+    "100+ Employees",
   ];
 
+  // Validate required fields for each tab
+  const validateTab = (tab: string): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (tab === "company") {
+      if (!formData.companyName.trim()) {
+        newErrors.companyName = "Company name is required";
+      }
+      if (!formData.registrationNumber.trim()) {
+        newErrors.registrationNumber = "Registration number is required";
+      }
+      if (!formData.industry) {
+        newErrors.industry = "Industry is required";
+      }
+    } else if (tab === "contact") {
+      if (!formData.email.trim()) {
+        newErrors.email = "Email is required";
+      } else {
+        const emailError = validateEmail(formData.email);
+        if (emailError) newErrors.email = emailError;
+      }
+      if (!formData.phone.trim()) {
+        newErrors.phone = "Phone number is required";
+      } else {
+        const phoneError = validatePhone(formData.phone);
+        if (phoneError) newErrors.phone = phoneError;
+      }
+      if (!formData.address.trim()) {
+        newErrors.address = "Address is required";
+      }
+      if (!formData.city.trim()) {
+        newErrors.city = "City is required";
+      }
+      if (!formData.district.trim()) {
+        newErrors.district = "District is required";
+      }
+      // Validate optional URL fields
+      if (formData.website) {
+        const urlError = validateURL(formData.website);
+        if (urlError) newErrors.website = urlError;
+      }
+      if (formData.linkedin) {
+        const urlError = validateURL(formData.linkedin);
+        if (urlError) newErrors.linkedin = urlError;
+      }
+      if (formData.facebook) {
+        const urlError = validateURL(formData.facebook);
+        if (urlError) newErrors.facebook = urlError;
+      }
+      if (formData.twitter) {
+        const urlError = validateURL(formData.twitter);
+        if (urlError) newErrors.twitter = urlError;
+      }
+    } else if (tab === "business") {
+      if (!formData.description.trim()) {
+        newErrors.description = "Business description is required";
+      }
+    } else if (tab === "authentication") {
+      if (!formData.password) {
+        newErrors.password = "Password is required";
+      } else {
+        const passError = validatePasswordStrength(formData.password);
+        if (passError) newErrors.password = passError;
+      }
+      if (!formData.confirmPassword) {
+        newErrors.confirmPassword = "Please confirm your password";
+      } else {
+        const matchError = validatePasswordMatch(formData.password, formData.confirmPassword);
+        if (matchError) newErrors.confirmPassword = matchError;
+      }
+      if (!formData.acceptTerms) {
+        newErrors.acceptTerms = "You must accept the terms and conditions";
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields correctly before proceeding.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   const nextTab = (next: string) => {
+    // Validate current tab before moving to next
+    if (!validateTab(currentTab)) {
+      return;
+    }
     setCurrentTab(next);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -380,8 +569,13 @@ export default function Register() {
                             placeholder="ABC Pvt. Ltd."
                             value={formData.companyName}
                             onChange={(e) => handleInputChange("companyName", e.target.value)}
+                            onBlur={(e) => validateField("companyName", e.target.value)}
                             required
+                            className={errors.companyName ? "border-red-500" : ""}
                           />
+                          {errors.companyName && (
+                            <p className="text-sm text-red-500">{errors.companyName}</p>
+                          )}
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="registrationNumber">Company Registration Number *</Label>
@@ -390,8 +584,13 @@ export default function Register() {
                             placeholder="12345/078/079"
                             value={formData.registrationNumber}
                             onChange={(e) => handleInputChange("registrationNumber", e.target.value)}
+                            onBlur={(e) => validateField("registrationNumber", e.target.value)}
                             required
+                            className={errors.registrationNumber ? "border-red-500" : ""}
                           />
+                          {errors.registrationNumber && (
+                            <p className="text-sm text-red-500">{errors.registrationNumber}</p>
+                          )}
                         </div>
                       </div>
 
@@ -399,10 +598,13 @@ export default function Register() {
                         <Label htmlFor="industry">Industry *</Label>
                         <Select
                           value={formData.industry}
-                          onValueChange={(value) => handleInputChange("industry", value)}
+                          onValueChange={(value) => {
+                            handleInputChange("industry", value);
+                            validateField("industry", value);
+                          }}
                           required
                         >
-                          <SelectTrigger id="industry">
+                          <SelectTrigger id="industry" className={errors.industry ? "border-red-500" : ""}>
                             <SelectValue placeholder="Select industry" />
                           </SelectTrigger>
                           <SelectContent>
@@ -413,6 +615,9 @@ export default function Register() {
                             ))}
                           </SelectContent>
                         </Select>
+                        {errors.industry && (
+                          <p className="text-sm text-red-500">{errors.industry}</p>
+                        )}
                       </div>
 
                       <div className="grid gap-6 sm:grid-cols-2">
@@ -487,8 +692,13 @@ export default function Register() {
                             placeholder="info@company.com"
                             value={formData.email}
                             onChange={(e) => handleInputChange("email", e.target.value)}
+                            onBlur={(e) => validateField("email", e.target.value)}
                             required
+                            className={errors.email ? "border-red-500" : ""}
                           />
+                          {errors.email && (
+                            <p className="text-sm text-red-500">{errors.email}</p>
+                          )}
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="phone">Phone Number *</Label>
@@ -498,8 +708,13 @@ export default function Register() {
                             placeholder="+977 1-XXXXXXX"
                             value={formData.phone}
                             onChange={(e) => handleInputChange("phone", e.target.value)}
+                            onBlur={(e) => validateField("phone", e.target.value)}
                             required
+                            className={errors.phone ? "border-red-500" : ""}
                           />
+                          {errors.phone && (
+                            <p className="text-sm text-red-500">{errors.phone}</p>
+                          )}
                         </div>
                       </div>
 
@@ -511,7 +726,12 @@ export default function Register() {
                           placeholder="https://www.company.com"
                           value={formData.website}
                           onChange={(e) => handleInputChange("website", e.target.value)}
+                          onBlur={(e) => validateField("website", e.target.value)}
+                          className={errors.website ? "border-red-500" : ""}
                         />
+                        {errors.website && (
+                          <p className="text-sm text-red-500">{errors.website}</p>
+                        )}
                       </div>
 
                       <div className="space-y-2">
@@ -521,8 +741,13 @@ export default function Register() {
                           placeholder="Thamel Marg, Ward No. 26"
                           value={formData.address}
                           onChange={(e) => handleInputChange("address", e.target.value)}
+                          onBlur={(e) => validateField("address", e.target.value)}
                           required
+                          className={errors.address ? "border-red-500" : ""}
                         />
+                        {errors.address && (
+                          <p className="text-sm text-red-500">{errors.address}</p>
+                        )}
                       </div>
 
                       <div className="grid gap-6 sm:grid-cols-2">
@@ -533,8 +758,13 @@ export default function Register() {
                             placeholder="Kathmandu"
                             value={formData.city}
                             onChange={(e) => handleInputChange("city", e.target.value)}
+                            onBlur={(e) => validateField("city", e.target.value)}
                             required
+                            className={errors.city ? "border-red-500" : ""}
                           />
+                          {errors.city && (
+                            <p className="text-sm text-red-500">{errors.city}</p>
+                          )}
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="district">District *</Label>
@@ -543,8 +773,13 @@ export default function Register() {
                             placeholder="Kathmandu"
                             value={formData.district}
                             onChange={(e) => handleInputChange("district", e.target.value)}
+                            onBlur={(e) => validateField("district", e.target.value)}
                             required
+                            className={errors.district ? "border-red-500" : ""}
                           />
+                          {errors.district && (
+                            <p className="text-sm text-red-500">{errors.district}</p>
+                          )}
                         </div>
                       </div>
 
@@ -560,7 +795,12 @@ export default function Register() {
                               placeholder="https://linkedin.com/company/..."
                               value={formData.linkedin}
                               onChange={(e) => handleInputChange("linkedin", e.target.value)}
+                              onBlur={(e) => validateField("linkedin", e.target.value)}
+                              className={errors.linkedin ? "border-red-500" : ""}
                             />
+                            {errors.linkedin && (
+                              <p className="text-sm text-red-500">{errors.linkedin}</p>
+                            )}
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="facebook" className="text-sm text-muted-foreground">
@@ -571,7 +811,12 @@ export default function Register() {
                               placeholder="https://facebook.com/..."
                               value={formData.facebook}
                               onChange={(e) => handleInputChange("facebook", e.target.value)}
+                              onBlur={(e) => validateField("facebook", e.target.value)}
+                              className={errors.facebook ? "border-red-500" : ""}
                             />
+                            {errors.facebook && (
+                              <p className="text-sm text-red-500">{errors.facebook}</p>
+                            )}
                           </div>
                           <div className="space-y-2">
                             <Label htmlFor="twitter" className="text-sm text-muted-foreground">
@@ -582,7 +827,12 @@ export default function Register() {
                               placeholder="https://twitter.com/..."
                               value={formData.twitter}
                               onChange={(e) => handleInputChange("twitter", e.target.value)}
+                              onBlur={(e) => validateField("twitter", e.target.value)}
+                              className={errors.twitter ? "border-red-500" : ""}
                             />
+                            {errors.twitter && (
+                              <p className="text-sm text-red-500">{errors.twitter}</p>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -619,8 +869,13 @@ export default function Register() {
                           rows={6}
                           value={formData.description}
                           onChange={(e) => handleInputChange("description", e.target.value)}
+                          onBlur={(e) => validateField("description", e.target.value)}
                           required
+                          className={errors.description ? "border-red-500" : ""}
                         />
+                        {errors.description && (
+                          <p className="text-sm text-red-500">{errors.description}</p>
+                        )}
                         <p className="text-xs text-muted-foreground">
                           This will be the main description investors see. Be clear and compelling.
                         </p>
@@ -677,6 +932,103 @@ export default function Register() {
                           value={formData.revenueModel}
                           onChange={(e) => handleInputChange("revenueModel", e.target.value)}
                         />
+                      </div>
+
+                      {/* Investment Parameters Section */}
+                      <div className="rounded-lg border border-border bg-secondary/20 p-6 space-y-6">
+                        <div>
+                          <h3 className="text-lg font-semibold mb-2">Investment Parameters (Optional)</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Provide details about investment structure and expected returns
+                          </p>
+                        </div>
+
+                        <div className="grid gap-6 sm:grid-cols-2">
+                          <div className="space-y-2">
+                            <Label htmlFor="minimumInvestmentUnits">Minimum Investment Units</Label>
+                            <Input
+                              id="minimumInvestmentUnits"
+                              type="number"
+                              placeholder="100"
+                              value={formData.minimumInvestmentUnits}
+                              onChange={(e) => handleInputChange("minimumInvestmentUnits", e.target.value)}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Minimum number of units an investor can purchase
+                            </p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="maximumInvestmentUnits">Maximum Investment Units</Label>
+                            <Input
+                              id="maximumInvestmentUnits"
+                              type="number"
+                              placeholder="10000"
+                              value={formData.maximumInvestmentUnits}
+                              onChange={(e) => handleInputChange("maximumInvestmentUnits", e.target.value)}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Maximum number of units an investor can purchase
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="grid gap-6 sm:grid-cols-2">
+                          <div className="space-y-2">
+                            <Label htmlFor="pricePerUnit">Price per Unit (NPR)</Label>
+                            <Input
+                              id="pricePerUnit"
+                              type="number"
+                              placeholder="1000"
+                              value={formData.pricePerUnit}
+                              onChange={(e) => handleInputChange("pricePerUnit", e.target.value)}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Price of each investment unit in NPR
+                            </p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="estimatedMarketValuation">Estimated Market Valuation (NPR)</Label>
+                            <Input
+                              id="estimatedMarketValuation"
+                              type="number"
+                              placeholder="50000000"
+                              value={formData.estimatedMarketValuation}
+                              onChange={(e) => handleInputChange("estimatedMarketValuation", e.target.value)}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Current estimated market value of your business
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="grid gap-6 sm:grid-cols-2">
+                          <div className="space-y-2">
+                            <Label htmlFor="expectedReturnOptions">Expected Return Options</Label>
+                            <Input
+                              id="expectedReturnOptions"
+                              type="text"
+                              placeholder="15-20% annually"
+                              value={formData.expectedReturnOptions}
+                              onChange={(e) => handleInputChange("expectedReturnOptions", e.target.value)}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Expected returns for investors (e.g., "15-20% annually")
+                            </p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="ipoTimeHorizon">Time Horizon for IPO</Label>
+                            <Input
+                              id="ipoTimeHorizon"
+                              type="text"
+                              placeholder="3-5 years"
+                              value={formData.ipoTimeHorizon}
+                              onChange={(e) => handleInputChange("ipoTimeHorizon", e.target.value)}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Expected timeframe for IPO or exit (e.g., "3-5 years")
+                            </p>
+                          </div>
+                        </div>
                       </div>
 
                       <div className="flex justify-between">
@@ -853,9 +1205,14 @@ export default function Register() {
                             placeholder="Create a strong password"
                             value={formData.password}
                             onChange={(e) => handleInputChange("password", e.target.value)}
+                            onBlur={(e) => validateField("password", e.target.value)}
                             required
                             minLength={8}
+                            className={errors.password ? "border-red-500" : ""}
                           />
+                          {errors.password && (
+                            <p className="text-sm text-red-500">{errors.password}</p>
+                          )}
                           <p className="text-xs text-muted-foreground">
                             Minimum 8 characters
                           </p>
@@ -868,14 +1225,19 @@ export default function Register() {
                             placeholder="Re-enter your password"
                             value={formData.confirmPassword}
                             onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                            onBlur={(e) => validateField("confirmPassword", e.target.value)}
                             required
                             minLength={8}
+                            className={errors.confirmPassword ? "border-red-500" : ""}
                           />
+                          {errors.confirmPassword && (
+                            <p className="text-sm text-red-500">{errors.confirmPassword}</p>
+                          )}
                         </div>
                       </div>
 
                       <div className="space-y-4">
-                        <div className="flex items-start space-x-3 rounded-lg border p-4">
+                        <div className={`flex items-start space-x-3 rounded-lg border p-4 ${errors.acceptTerms ? "border-red-500" : ""}`}>
                           <Checkbox
                             id="terms"
                             checked={formData.acceptTerms}
@@ -903,6 +1265,9 @@ export default function Register() {
                             </p>
                           </div>
                         </div>
+                        {errors.acceptTerms && (
+                          <p className="text-sm text-red-500">{errors.acceptTerms}</p>
+                        )}
                       </div>
 
                       <Alert className="bg-blue-50 border-blue-200">
