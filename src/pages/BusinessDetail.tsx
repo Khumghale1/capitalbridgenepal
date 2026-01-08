@@ -402,6 +402,18 @@ export default function BusinessDetail() {
                         <p className="mt-1 text-base font-semibold text-primary">{business.ipoTimeHorizon}</p>
                       </div>
                     )}
+                    {business.teamSize && (
+                      <div
+                        onClick={() => setOpenModal('teamSize')}
+                        className="rounded-lg border border-primary/20 bg-primary/5 p-4 transition-all hover:border-primary/40 hover:shadow-md cursor-pointer group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-muted-foreground">Team Size</p>
+                          <Info className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        <p className="mt-1 text-base font-semibold text-primary">{business.teamSize}</p>
+                      </div>
+                    )}
                   </div>
                   <p className="mt-4 text-xs text-muted-foreground">
                     <ShieldCheck className="inline h-3 w-3 mr-1" />
@@ -628,6 +640,38 @@ export default function BusinessDetail() {
                         <strong>Note:</strong> IPO timelines are estimates and subject to change based on market conditions,
                         regulatory requirements, and company performance. There is no guarantee an IPO will occur.
                       </p>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={openModal === 'teamSize'} onOpenChange={() => setOpenModal(null)}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Team Size</DialogTitle>
+                    <DialogDescription>
+                      Understanding the company's workforce
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="rounded-lg bg-primary/5 p-4 border border-primary/20">
+                      <p className="text-3xl font-bold text-primary">{business?.teamSize}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="font-semibold">What does this mean?</h4>
+                      <p className="text-sm text-muted-foreground">
+                        This represents the current size of the company's team/workforce. Team size can be an indicator
+                        of the company's operational scale and growth stage.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <h4 className="font-semibold">Why is this important?</h4>
+                      <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 ml-2">
+                        <li>Indicates the company's operational capacity and maturity</li>
+                        <li>Helps assess scalability and growth potential</li>
+                        <li>Provides context for revenue and valuation metrics</li>
+                        <li>Shows the company's investment in human capital</li>
+                      </ul>
                     </div>
                   </div>
                 </DialogContent>

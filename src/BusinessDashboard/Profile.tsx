@@ -94,10 +94,16 @@ export default function Profile() {
     paidUpCapital: "",
     investmentCapacityMin: "",
     investmentCapacityMax: "",
+    minimumInvestmentUnits: "",
+    maximumInvestmentUnits: "",
     pricePerUnit: "",
     expectedReturnOptions: "",
     estimatedMarketValuation: "",
     ipoTimeHorizon: "",
+
+    // Strategic Information
+    vision: "",
+    mission: "",
   });
 
   useEffect(() => {
@@ -148,10 +154,15 @@ export default function Profile() {
         paidUpCapital: data.paidUpCapital?.toString() || "",
         investmentCapacityMin: data.investmentCapacityMin?.toString() || "",
         investmentCapacityMax: data.investmentCapacityMax?.toString() || "",
+        minimumInvestmentUnits: data.minimumInvestmentUnits?.toString() || "",
+        maximumInvestmentUnits: data.maximumInvestmentUnits?.toString() || "",
         pricePerUnit: data.pricePerUnit?.toString() || "",
         expectedReturnOptions: data.expectedReturnOptions || "",
         estimatedMarketValuation: data.estimatedMarketValuation?.toString() || "",
         ipoTimeHorizon: data.ipoTimeHorizon || "",
+
+        vision: data.vision || "",
+        mission: data.mission || "",
       });
     } catch (error) {
       console.error("Failed to fetch profile:", error);
@@ -182,6 +193,8 @@ export default function Profile() {
         teamSize: formData.companySize || undefined,
         briefDescription: formData.briefDescription || undefined,
         fullDescription: formData.fullDescription || undefined,
+        vision: formData.vision || undefined,
+        mission: formData.mission || undefined,
         growthPlans: formData.useOfFunds || undefined,
         contactEmail: formData.contactEmail || undefined,
         contactPhone: formData.contactPhone || undefined,
@@ -197,6 +210,8 @@ export default function Profile() {
       if (formData.paidUpCapital) updateData.paidUpCapital = parseFloat(formData.paidUpCapital);
       if (formData.investmentCapacityMin) updateData.investmentCapacityMin = parseFloat(formData.investmentCapacityMin);
       if (formData.investmentCapacityMax) updateData.investmentCapacityMax = parseFloat(formData.investmentCapacityMax);
+      if (formData.minimumInvestmentUnits) updateData.minimumInvestmentUnits = parseInt(formData.minimumInvestmentUnits);
+      if (formData.maximumInvestmentUnits) updateData.maximumInvestmentUnits = parseInt(formData.maximumInvestmentUnits);
       if (formData.pricePerUnit) updateData.pricePerUnit = parseFloat(formData.pricePerUnit);
       if (formData.estimatedMarketValuation) updateData.estimatedMarketValuation = parseFloat(formData.estimatedMarketValuation);
 
@@ -578,6 +593,30 @@ export default function Profile() {
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="vision">Vision Statement</Label>
+            <Textarea
+              id="vision"
+              rows={3}
+              value={formData.vision}
+              onChange={(e) => handleInputChange('vision', e.target.value)}
+              disabled={!isEditing}
+              placeholder="What is your long-term vision for the company..."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="mission">Mission Statement</Label>
+            <Textarea
+              id="mission"
+              rows={3}
+              value={formData.mission}
+              onChange={(e) => handleInputChange('mission', e.target.value)}
+              disabled={!isEditing}
+              placeholder="What is your company's mission and purpose..."
+            />
+          </div>
+
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="fundingStage">Current Funding Stage (Optional)</Label>
@@ -680,6 +719,37 @@ export default function Profile() {
                 disabled={!isEditing}
                 placeholder="e.g., 5000000"
               />
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="minimumInvestmentUnits">Minimum Investment Units</Label>
+              <Input
+                id="minimumInvestmentUnits"
+                type="number"
+                value={formData.minimumInvestmentUnits}
+                onChange={(e) => handleInputChange('minimumInvestmentUnits', e.target.value)}
+                disabled={!isEditing}
+                placeholder="e.g., 100"
+              />
+              <p className="text-xs text-muted-foreground">
+                Minimum number of units an investor can purchase
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="maximumInvestmentUnits">Maximum Investment Units</Label>
+              <Input
+                id="maximumInvestmentUnits"
+                type="number"
+                value={formData.maximumInvestmentUnits}
+                onChange={(e) => handleInputChange('maximumInvestmentUnits', e.target.value)}
+                disabled={!isEditing}
+                placeholder="e.g., 10000"
+              />
+              <p className="text-xs text-muted-foreground">
+                Maximum number of units an investor can purchase
+              </p>
             </div>
           </div>
 
