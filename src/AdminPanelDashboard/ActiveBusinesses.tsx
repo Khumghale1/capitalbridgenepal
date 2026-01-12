@@ -299,8 +299,12 @@ export default function ActiveBusinesses() {
                 businesses.map((business) => (
                   <div key={business.id} className="flex items-center justify-between rounded-lg border p-4">
                     <div className="flex gap-4 flex-1">
-                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Building2 className="h-6 w-6 text-primary" />
+                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+                        {business.logoUrl ? (
+                          <img src={business.logoUrl} alt={business.name} className="h-10 w-10 object-contain" />
+                        ) : (
+                          <Building2 className="h-6 w-6 text-primary" />
+                        )}
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">

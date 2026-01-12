@@ -1,3 +1,5 @@
+import type { MediaType, MediaTypesResponse, MediaUploadResponse, MediaListResponse, BusinessMedia } from '@/types/media';
+
 // API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -38,10 +40,64 @@ async function apiRequest<T>(
   const data = await response.json();
 
   if (!response.ok) {
-    throw new Error(data.message || `API Error: ${response.status}`);
+    throw new Error(data.message || data.error || `API Error: ${response.status}`);
   }
 
   return data as T;
+}
+
+// Helper function for file uploads (FormData requests)
+async function uploadRequest<T>(
+  endpoint: string,
+  formData: FormData,
+  onProgress?: (progress: number) => void
+): Promise<T> {
+  const url = `${API_BASE_URL}${endpoint}`;
+  const token = getAuthToken();
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+
+    // Track upload progress
+    if (onProgress) {
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          const progress = Math.round((event.loaded / event.total) * 100);
+          onProgress(progress);
+        }
+      });
+    }
+
+    xhr.addEventListener('load', () => {
+      try {
+        const response = JSON.parse(xhr.responseText);
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(response as T);
+        } else {
+          reject(new Error(response.message || response.error || `Upload failed: ${xhr.status}`));
+        }
+      } catch {
+        reject(new Error('Failed to parse response'));
+      }
+    });
+
+    xhr.addEventListener('error', () => {
+      reject(new Error('Network error during upload'));
+    });
+
+    xhr.addEventListener('abort', () => {
+      reject(new Error('Upload cancelled'));
+    });
+
+    xhr.open('POST', url);
+    xhr.withCredentials = true;
+
+    if (token) {
+      xhr.setRequestHeader('Authorization', token);
+    }
+
+    xhr.send(formData);
+  });
 }
 
 // API Endpoints
@@ -297,6 +353,104 @@ export const api = {
       return apiRequest('/api/business/request-removal', {
         method: 'POST',
         body: JSON.stringify(data),
+      });
+    },
+  },
+
+  // Upload/Media APIs
+  upload: {
+    // Get available media types and their limits
+    getMediaTypes: async (): Promise<MediaTypesResponse> => {
+      return apiRequest<MediaTypesResponse>('/api/upload/media-types', {
+        method: 'GET',
+      });
+    },
+
+    // Upload business media (file)
+    uploadMedia: async (
+      businessId: string,
+      mediaType: MediaType,
+      file: File,
+      options?: {
+        title?: string;
+        description?: string;
+        onProgress?: (progress: number) => void;
+      }
+    ): Promise<MediaUploadResponse> => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('businessId', businessId);
+      formData.append('mediaType', mediaType);
+      if (options?.title) formData.append('title', options.title);
+      if (options?.description) formData.append('description', options.description);
+
+      return uploadRequest<MediaUploadResponse>(
+        '/api/upload/media',
+        formData,
+        options?.onProgress
+      );
+    },
+
+    // Upload business logo (shorthand)
+    uploadLogo: async (
+      businessId: string,
+      file: File,
+      onProgress?: (progress: number) => void
+    ): Promise<MediaUploadResponse & { logoUrl: string }> => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('businessId', businessId);
+      formData.append('mediaType', 'COMPANY_LOGO');
+
+      return uploadRequest<MediaUploadResponse & { logoUrl: string }>(
+        '/api/upload/logo',
+        formData,
+        onProgress
+      );
+    },
+
+    // Add external URL (YouTube, Website)
+    addExternalUrl: async (
+      businessId: string,
+      mediaType: 'YOUTUBE_VIDEO' | 'WEBSITE',
+      externalUrl: string,
+      options?: { title?: string; description?: string }
+    ): Promise<MediaUploadResponse> => {
+      return apiRequest<MediaUploadResponse>('/api/upload/external-url', {
+        method: 'POST',
+        body: JSON.stringify({
+          businessId,
+          mediaType,
+          externalUrl,
+          title: options?.title,
+          description: options?.description,
+        }),
+      });
+    },
+
+    // Get business media
+    getMedia: async (
+      businessId: string,
+      options?: { mediaType?: MediaType; grouped?: boolean }
+    ): Promise<MediaListResponse> => {
+      const params = new URLSearchParams();
+      if (options?.mediaType) params.append('mediaType', options.mediaType);
+      if (options?.grouped) params.append('grouped', 'true');
+
+      const query = params.toString();
+      const endpoint = query
+        ? `/api/upload/media/${businessId}?${query}`
+        : `/api/upload/media/${businessId}`;
+
+      return apiRequest<MediaListResponse>(endpoint, {
+        method: 'GET',
+      });
+    },
+
+    // Delete media
+    deleteMedia: async (mediaId: string): Promise<{ message: string }> => {
+      return apiRequest<{ message: string }>(`/api/upload/media/${mediaId}`, {
+        method: 'DELETE',
       });
     },
   },

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { BusinessDashboardLayout } from "./BusinessDashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -15,9 +16,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, MapPin, Globe, Phone, Mail, Loader2, Upload } from "lucide-react";
+import { Building2, Globe, Phone, Mail, Loader2, Upload, FileText, Trash2, CheckCircle2, AlertCircle, X } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
+import type { BusinessMedia, MediaType } from "@/types/media";
+import { MEDIA_TYPE_LABELS, ACCEPTED_FILE_TYPES, formatFileSize } from "@/types/media";
 
 // Same options as Register.tsx
 const industries = [
@@ -53,6 +56,23 @@ const fundingStages = [
   "Revenue Generating",
 ];
 
+// Document upload types
+interface UploadState {
+  file: File | null;
+  progress: number;
+  uploading: boolean;
+  error: string | null;
+}
+
+const DOCUMENT_TYPES: { key: string; mediaType: MediaType; label: string; accept: string; description: string }[] = [
+  { key: 'logo', mediaType: 'COMPANY_LOGO', label: 'Company Logo', accept: ACCEPTED_FILE_TYPES.COMPANY_LOGO, description: 'PNG, JPG, or WebP. Recommended: 500x500px' },
+  { key: 'registration', mediaType: 'REGISTRATION_CERTIFICATE', label: 'Company Registration Certificate', accept: ACCEPTED_FILE_TYPES.REGISTRATION_CERTIFICATE, description: 'PDF or image format' },
+  { key: 'pan', mediaType: 'PAN_CERTIFICATE', label: 'PAN Certificate', accept: ACCEPTED_FILE_TYPES.PAN_CERTIFICATE, description: 'PDF or image format' },
+  { key: 'pitchDeck', mediaType: 'PITCH_DECK', label: 'Pitch Deck', accept: ACCEPTED_FILE_TYPES.PITCH_DECK, description: 'PDF or PowerPoint. Max 50MB' },
+  { key: 'financial', mediaType: 'FINANCIAL_DOCUMENT', label: 'Financial Documents', accept: ACCEPTED_FILE_TYPES.FINANCIAL_DOCUMENT, description: 'PDF or Excel format' },
+  { key: 'other', mediaType: 'DOCUMENT', label: 'Other Documents', accept: ACCEPTED_FILE_TYPES.DOCUMENT, description: 'PDF or Word format' },
+];
+
 export default function Profile() {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -60,6 +80,12 @@ export default function Profile() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [businessData, setBusinessData] = useState<any>(null);
+
+  // Media/Upload state
+  const [existingMedia, setExistingMedia] = useState<BusinessMedia[]>([]);
+  const [uploadStates, setUploadStates] = useState<Record<string, UploadState>>({});
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
   const [formData, setFormData] = useState({
     // Company Information
     name: "",
@@ -117,6 +143,16 @@ export default function Profile() {
       const data = response.business || response;
 
       setBusinessData(data);
+
+      // Fetch existing media for this business
+      if (data.id) {
+        try {
+          const mediaResponse = await api.upload.getMedia(data.id);
+          setExistingMedia(Array.isArray(mediaResponse.media) ? mediaResponse.media : []);
+        } catch (mediaError) {
+          console.error("Failed to fetch media:", mediaError);
+        }
+      }
 
       // Parse location into address, city, district
       const locationParts = (data.location || "").split(",").map((s: string) => s.trim());
@@ -238,6 +274,136 @@ export default function Profile() {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Get existing media for a specific type
+  const getExistingMediaForType = (mediaType: MediaType): BusinessMedia | undefined => {
+    return existingMedia.find(m => m.mediaType === mediaType);
+  };
+
+  // Get all existing media for a type (for multi-file types)
+  const getExistingMediaListForType = (mediaType: MediaType): BusinessMedia[] => {
+    return existingMedia.filter(m => m.mediaType === mediaType);
+  };
+
+  // Handle file selection
+  const handleFileSelect = async (key: string, mediaType: MediaType, file: File) => {
+    if (!businessData?.id) {
+      toast({
+        title: "Error",
+        description: "Business profile not loaded",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Update upload state
+    setUploadStates(prev => ({
+      ...prev,
+      [key]: { file, progress: 0, uploading: true, error: null }
+    }));
+
+    try {
+      // Use logo endpoint for logo, otherwise use media endpoint
+      if (mediaType === 'COMPANY_LOGO') {
+        await api.upload.uploadLogo(
+          businessData.id,
+          file,
+          (progress) => {
+            setUploadStates(prev => ({
+              ...prev,
+              [key]: { ...prev[key], progress }
+            }));
+          }
+        );
+      } else {
+        await api.upload.uploadMedia(
+          businessData.id,
+          mediaType,
+          file,
+          {
+            onProgress: (progress) => {
+              setUploadStates(prev => ({
+                ...prev,
+                [key]: { ...prev[key], progress }
+              }));
+            }
+          }
+        );
+      }
+
+      // Success
+      setUploadStates(prev => ({
+        ...prev,
+        [key]: { file: null, progress: 100, uploading: false, error: null }
+      }));
+
+      toast({
+        title: "Upload Successful",
+        description: `${MEDIA_TYPE_LABELS[mediaType]} uploaded successfully.`,
+      });
+
+      // Refresh media list
+      const mediaResponse = await api.upload.getMedia(businessData.id);
+      setExistingMedia(Array.isArray(mediaResponse.media) ? mediaResponse.media : []);
+
+      // Refresh profile to get updated logoUrl
+      if (mediaType === 'COMPANY_LOGO') {
+        fetchProfile();
+      }
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
+      setUploadStates(prev => ({
+        ...prev,
+        [key]: { ...prev[key], uploading: false, error: errorMessage }
+      }));
+
+      toast({
+        title: "Upload Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle file input change
+  const handleFileInputChange = (key: string, mediaType: MediaType, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleFileSelect(key, mediaType, file);
+    }
+    // Reset input so same file can be selected again
+    event.target.value = '';
+  };
+
+  // Handle delete media
+  const handleDeleteMedia = async (mediaId: string, mediaType: MediaType) => {
+    try {
+      await api.upload.deleteMedia(mediaId);
+
+      toast({
+        title: "Deleted",
+        description: `${MEDIA_TYPE_LABELS[mediaType]} deleted successfully.`,
+      });
+
+      // Refresh media list
+      if (businessData?.id) {
+        const mediaResponse = await api.upload.getMedia(businessData.id);
+        setExistingMedia(Array.isArray(mediaResponse.media) ? mediaResponse.media : []);
+      }
+
+      // Refresh profile if logo was deleted
+      if (mediaType === 'COMPANY_LOGO') {
+        fetchProfile();
+      }
+    } catch (error) {
+      toast({
+        title: "Delete Failed",
+        description: error instanceof Error ? error.message : 'Failed to delete',
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
@@ -808,83 +974,163 @@ export default function Profile() {
         <CardHeader>
           <CardTitle>Documents</CardTitle>
           <CardDescription>
-            Upload or update supporting documents (optional)
+            Upload supporting documents for your business profile
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="rounded-lg border-2 border-dashed border-border bg-secondary/20 p-6">
-            <div className="space-y-2">
-              <Label htmlFor="companyLogo">Company Logo</Label>
-              <Input
-                id="companyLogo"
-                type="file"
-                accept="image/*"
-                disabled={!isEditing}
-              />
-              <p className="text-xs text-muted-foreground">
-                PNG, JPG, or SVG. Recommended size: 500x500px
-              </p>
-            </div>
-          </div>
+          {DOCUMENT_TYPES.map(({ key, mediaType, label, accept, description }) => {
+            const existingMedia = mediaType === 'FINANCIAL_DOCUMENT' || mediaType === 'DOCUMENT'
+              ? getExistingMediaListForType(mediaType)
+              : [getExistingMediaForType(mediaType)].filter(Boolean) as BusinessMedia[];
+            const uploadState = uploadStates[key];
+            const isMultiple = mediaType === 'FINANCIAL_DOCUMENT' || mediaType === 'DOCUMENT';
 
-          <div className="rounded-lg border-2 border-dashed border-border bg-secondary/20 p-6">
-            <div className="space-y-2">
-              <Label htmlFor="registrationCert">Company Registration Certificate</Label>
-              <Input
-                id="registrationCert"
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                disabled={!isEditing}
-              />
-              <p className="text-xs text-muted-foreground">PDF or image format</p>
-            </div>
-          </div>
+            return (
+              <div key={key} className="rounded-lg border-2 border-dashed border-border bg-secondary/20 p-6">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor={key}>{label}</Label>
+                    {existingMedia.length > 0 && !isMultiple && (
+                      <Badge variant="secondary" className="gap-1">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Uploaded
+                      </Badge>
+                    )}
+                  </div>
 
-          <div className="rounded-lg border-2 border-dashed border-border bg-secondary/20 p-6">
-            <div className="space-y-2">
-              <Label htmlFor="pitchDeck">Pitch Deck</Label>
-              <Input
-                id="pitchDeck"
-                type="file"
-                accept=".pdf,.ppt,.pptx"
-                disabled={!isEditing}
-              />
-              <p className="text-xs text-muted-foreground">
-                PDF or PowerPoint format. Max 20MB
-              </p>
-            </div>
-          </div>
+                  {/* Existing files */}
+                  {existingMedia.length > 0 && (
+                    <div className="space-y-2">
+                      {existingMedia.map((media) => (
+                        <div
+                          key={media.id}
+                          className="flex items-center justify-between rounded-md bg-background p-3 border"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded bg-primary/10 flex items-center justify-center">
+                              <FileText className="h-4 w-4 text-primary" />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium truncate max-w-[200px]">
+                                {media.fileName || media.title || MEDIA_TYPE_LABELS[mediaType]}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {media.fileSize ? formatFileSize(media.fileSize) : ''}
+                                {media.uploadedAt && ` • ${new Date(media.uploadedAt).toLocaleDateString()}`}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            {media.fileUrl && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => window.open(media.fileUrl, '_blank')}
+                              >
+                                View
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteMedia(media.id, mediaType)}
+                              disabled={!isEditing}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
-          <div className="rounded-lg border-2 border-dashed border-border bg-secondary/20 p-6">
-            <div className="space-y-2">
-              <Label htmlFor="financials">Financial Documents</Label>
-              <Input
-                id="financials"
-                type="file"
-                accept=".pdf,.xlsx,.xls"
-                multiple
-                disabled={!isEditing}
-              />
-              <p className="text-xs text-muted-foreground">
-                Financial statements, projections, etc. (PDF or Excel)
-              </p>
-            </div>
-          </div>
+                  {/* Upload progress */}
+                  {uploadState?.uploading && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="text-sm">Uploading... {uploadState.progress}%</span>
+                      </div>
+                      <Progress value={uploadState.progress} className="h-2" />
+                    </div>
+                  )}
 
-          <div className="rounded-lg border-2 border-dashed border-border bg-secondary/20 p-6">
-            <div className="space-y-2">
-              <Label htmlFor="otherDocs">Other Documents</Label>
-              <Input
-                id="otherDocs"
-                type="file"
-                multiple
-                disabled={!isEditing}
-              />
-              <p className="text-xs text-muted-foreground">
-                Business plan, market research, certifications, etc.
-              </p>
-            </div>
-          </div>
+                  {/* Upload error */}
+                  {uploadState?.error && (
+                    <div className="flex items-center gap-2 text-destructive text-sm">
+                      <AlertCircle className="h-4 w-4" />
+                      {uploadState.error}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto p-1"
+                        onClick={() => setUploadStates(prev => ({ ...prev, [key]: { file: null, progress: 0, uploading: false, error: null } }))}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Upload button - show if no existing file or for multi-file types */}
+                  {(existingMedia.length === 0 || isMultiple) && !uploadState?.uploading && (
+                    <div className="flex items-center gap-3">
+                      <input
+                        ref={(el) => { fileInputRefs.current[key] = el; }}
+                        id={key}
+                        type="file"
+                        accept={accept}
+                        className="hidden"
+                        disabled={!isEditing}
+                        onChange={(e) => handleFileInputChange(key, mediaType, e)}
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={!isEditing}
+                        onClick={() => fileInputRefs.current[key]?.click()}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        {existingMedia.length > 0 ? 'Add Another' : 'Upload'}
+                      </Button>
+                      <p className="text-xs text-muted-foreground">{description}</p>
+                    </div>
+                  )}
+
+                  {/* Replace button for single-file types */}
+                  {existingMedia.length > 0 && !isMultiple && !uploadState?.uploading && (
+                    <div className="flex items-center gap-3">
+                      <input
+                        ref={(el) => { fileInputRefs.current[`${key}-replace`] = el; }}
+                        type="file"
+                        accept={accept}
+                        className="hidden"
+                        disabled={!isEditing}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file && existingMedia[0]) {
+                            // Delete existing then upload new
+                            handleDeleteMedia(existingMedia[0].id, mediaType).then(() => {
+                              handleFileSelect(key, mediaType, file);
+                            });
+                          }
+                          e.target.value = '';
+                        }}
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={!isEditing}
+                        onClick={() => fileInputRefs.current[`${key}-replace`]?.click()}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Replace
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </CardContent>
       </Card>
     </BusinessDashboardLayout>

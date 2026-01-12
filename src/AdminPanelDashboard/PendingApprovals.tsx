@@ -293,8 +293,12 @@ export default function PendingApprovals() {
                     <div key={business.id} className="rounded-lg border p-4">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex gap-4 flex-1">
-                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                            <Building2 className="h-6 w-6 text-primary" />
+                          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
+                            {business.logoUrl ? (
+                              <img src={business.logoUrl} alt={business.name} className="h-10 w-10 object-contain" />
+                            ) : (
+                              <Building2 className="h-6 w-6 text-primary" />
+                            )}
                           </div>
                           <div className="space-y-1 flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">

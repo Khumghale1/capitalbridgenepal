@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -31,8 +32,18 @@ import {
   AlertCircle,
   XCircle,
   Lock,
+  X,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import type { MediaType } from "@/types/media";
+import { ACCEPTED_FILE_TYPES } from "@/types/media";
+
+// Document file types for registration
+interface DocumentFile {
+  file: File;
+  mediaType: MediaType;
+  label: string;
+}
 
 export default function Register() {
   const { toast } = useToast();
@@ -48,6 +59,14 @@ export default function Register() {
 
   const [currentTab, setCurrentTab] = useState("company");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingFiles, setIsUploadingFiles] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState<string>("");
+
+  // Document files state
+  const [documentFiles, setDocumentFiles] = useState<DocumentFile[]>([]);
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
   const [formData, setFormData] = useState({
     // Company Information
     companyName: "",
@@ -248,6 +267,74 @@ export default function Register() {
     }
   };
 
+  // Handle file selection for documents
+  const handleFileSelect = (mediaType: MediaType, label: string, files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    const newFiles: DocumentFile[] = Array.from(files).map(file => ({
+      file,
+      mediaType,
+      label
+    }));
+
+    setDocumentFiles(prev => {
+      // For single-file types, replace existing
+      const singleFileTypes: MediaType[] = ['COMPANY_LOGO', 'REGISTRATION_CERTIFICATE', 'PAN_CERTIFICATE', 'PITCH_DECK'];
+      if (singleFileTypes.includes(mediaType)) {
+        return [...prev.filter(f => f.mediaType !== mediaType), ...newFiles];
+      }
+      // For multi-file types, append
+      return [...prev, ...newFiles];
+    });
+  };
+
+  // Remove a selected file
+  const removeFile = (index: number) => {
+    setDocumentFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Get selected file for a media type
+  const getSelectedFile = (mediaType: MediaType): DocumentFile | undefined => {
+    return documentFiles.find(f => f.mediaType === mediaType);
+  };
+
+  // Get all selected files for a media type (for multi-file types)
+  const getSelectedFiles = (mediaType: MediaType): DocumentFile[] => {
+    return documentFiles.filter(f => f.mediaType === mediaType);
+  };
+
+  // Upload all documents after registration
+  const uploadDocuments = async (businessId: string) => {
+    if (documentFiles.length === 0) return;
+
+    setIsUploadingFiles(true);
+    setUploadProgress(0);
+
+    const totalFiles = documentFiles.length;
+    let uploadedCount = 0;
+
+    for (const docFile of documentFiles) {
+      try {
+        setUploadStatus(`Uploading ${docFile.label}...`);
+
+        if (docFile.mediaType === 'COMPANY_LOGO') {
+          await api.upload.uploadLogo(businessId, docFile.file);
+        } else {
+          await api.upload.uploadMedia(businessId, docFile.mediaType, docFile.file);
+        }
+
+        uploadedCount++;
+        setUploadProgress(Math.round((uploadedCount / totalFiles) * 100));
+      } catch (error) {
+        console.error(`Failed to upload ${docFile.label}:`, error);
+        // Continue with other files even if one fails
+      }
+    }
+
+    setUploadStatus("Upload complete!");
+    setIsUploadingFiles(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -286,14 +373,28 @@ export default function Register() {
     setIsSubmitting(true);
 
     try {
-      await api.onboarding.register({
+      const response: any = await api.onboarding.register({
         token: registrationToken,
         ...formData,
       });
 
       toast({
         title: "Registration Submitted!",
-        description: "Your account has been created. Please wait for admin approval before logging in.",
+        description: "Your account has been created. Uploading documents...",
+      });
+
+      // Upload documents if any were selected
+      if (documentFiles.length > 0 && response.business?.id) {
+        await uploadDocuments(response.business.id);
+        toast({
+          title: "Documents Uploaded!",
+          description: "All documents have been uploaded successfully.",
+        });
+      }
+
+      toast({
+        title: "Registration Complete!",
+        description: "Please wait for admin approval before logging in.",
       });
 
       // Redirect to business login after success
@@ -1051,86 +1152,252 @@ export default function Register() {
                     <CardHeader>
                       <CardTitle>Upload Documents</CardTitle>
                       <CardDescription>
-                        Upload supporting documents (all documents are optional)
+                        Upload supporting documents (all documents are optional). Files will be uploaded after registration.
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
+                      {/* Selected files summary */}
+                      {documentFiles.length > 0 && (
+                        <div className="rounded-lg bg-primary/5 border border-primary/20 p-4">
+                          <h4 className="font-medium mb-2 flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            Selected Files ({documentFiles.length})
+                          </h4>
+                          <div className="space-y-2">
+                            {documentFiles.map((doc, index) => (
+                              <div key={index} className="flex items-center justify-between text-sm bg-background rounded p-2">
+                                <span className="truncate flex-1">{doc.file.name}</span>
+                                <span className="text-muted-foreground mx-2">{doc.label}</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => removeFile(index)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       <div className="space-y-4">
-                        <div className="rounded-lg border-2 border-dashed border-border bg-secondary/20 p-6">
-                          <div className="space-y-2">
-                            <Label htmlFor="registrationCert">Company Registration Certificate (Optional)</Label>
-                            <Input
-                              id="registrationCert"
-                              type="file"
-                              accept=".pdf,.jpg,.jpeg,.png"
-                            />
-                            <p className="text-xs text-muted-foreground">PDF or image format</p>
-                          </div>
-                        </div>
-
-                        <div className="rounded-lg border-2 border-dashed border-border bg-secondary/20 p-6">
-                          <div className="space-y-2">
-                            <Label htmlFor="pitchDeck">Pitch Deck (Optional)</Label>
-                            <Input
-                              id="pitchDeck"
-                              type="file"
-                              accept=".pdf,.ppt,.pptx"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              PDF or PowerPoint format. Max 20MB
-                            </p>
-                          </div>
-                        </div>
-
+                        {/* Company Logo */}
                         <div className="rounded-lg border-2 border-dashed border-border bg-secondary/20 p-6">
                           <div className="space-y-2">
                             <Label htmlFor="companyLogo">Company Logo (Optional)</Label>
-                            <Input
+                            <input
+                              ref={(el) => { fileInputRefs.current['logo'] = el; }}
                               id="companyLogo"
                               type="file"
-                              accept="image/*"
+                              accept={ACCEPTED_FILE_TYPES.COMPANY_LOGO}
+                              className="hidden"
+                              onChange={(e) => {
+                                handleFileSelect('COMPANY_LOGO', 'Company Logo', e.target.files);
+                                e.target.value = '';
+                              }}
                             />
+                            <div className="flex items-center gap-3">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => fileInputRefs.current['logo']?.click()}
+                              >
+                                <Upload className="h-4 w-4 mr-2" />
+                                {getSelectedFile('COMPANY_LOGO') ? 'Replace' : 'Select File'}
+                              </Button>
+                              {getSelectedFile('COMPANY_LOGO') && (
+                                <span className="text-sm text-muted-foreground truncate">
+                                  {getSelectedFile('COMPANY_LOGO')?.file.name}
+                                </span>
+                              )}
+                            </div>
                             <p className="text-xs text-muted-foreground">
-                              PNG, JPG, or SVG. Recommended size: 500x500px
+                              PNG, JPG, or WebP. Recommended size: 500x500px
                             </p>
                           </div>
                         </div>
 
+                        {/* Registration Certificate */}
                         <div className="rounded-lg border-2 border-dashed border-border bg-secondary/20 p-6">
                           <div className="space-y-2">
-                            <Label htmlFor="panCert">PAN Certificate (Optional)</Label>
-                            <Input
-                              id="panCert"
+                            <Label htmlFor="registrationCert">Company Registration Certificate (Optional)</Label>
+                            <input
+                              ref={(el) => { fileInputRefs.current['registration'] = el; }}
+                              id="registrationCert"
                               type="file"
-                              accept=".pdf,.jpg,.jpeg,.png"
+                              accept={ACCEPTED_FILE_TYPES.REGISTRATION_CERTIFICATE}
+                              className="hidden"
+                              onChange={(e) => {
+                                handleFileSelect('REGISTRATION_CERTIFICATE', 'Registration Certificate', e.target.files);
+                                e.target.value = '';
+                              }}
                             />
+                            <div className="flex items-center gap-3">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => fileInputRefs.current['registration']?.click()}
+                              >
+                                <Upload className="h-4 w-4 mr-2" />
+                                {getSelectedFile('REGISTRATION_CERTIFICATE') ? 'Replace' : 'Select File'}
+                              </Button>
+                              {getSelectedFile('REGISTRATION_CERTIFICATE') && (
+                                <span className="text-sm text-muted-foreground truncate">
+                                  {getSelectedFile('REGISTRATION_CERTIFICATE')?.file.name}
+                                </span>
+                              )}
+                            </div>
                             <p className="text-xs text-muted-foreground">PDF or image format</p>
                           </div>
                         </div>
 
+                        {/* PAN Certificate */}
+                        <div className="rounded-lg border-2 border-dashed border-border bg-secondary/20 p-6">
+                          <div className="space-y-2">
+                            <Label htmlFor="panCert">PAN Certificate (Optional)</Label>
+                            <input
+                              ref={(el) => { fileInputRefs.current['pan'] = el; }}
+                              id="panCert"
+                              type="file"
+                              accept={ACCEPTED_FILE_TYPES.PAN_CERTIFICATE}
+                              className="hidden"
+                              onChange={(e) => {
+                                handleFileSelect('PAN_CERTIFICATE', 'PAN Certificate', e.target.files);
+                                e.target.value = '';
+                              }}
+                            />
+                            <div className="flex items-center gap-3">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => fileInputRefs.current['pan']?.click()}
+                              >
+                                <Upload className="h-4 w-4 mr-2" />
+                                {getSelectedFile('PAN_CERTIFICATE') ? 'Replace' : 'Select File'}
+                              </Button>
+                              {getSelectedFile('PAN_CERTIFICATE') && (
+                                <span className="text-sm text-muted-foreground truncate">
+                                  {getSelectedFile('PAN_CERTIFICATE')?.file.name}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">PDF or image format</p>
+                          </div>
+                        </div>
+
+                        {/* Pitch Deck */}
+                        <div className="rounded-lg border-2 border-dashed border-border bg-secondary/20 p-6">
+                          <div className="space-y-2">
+                            <Label htmlFor="pitchDeck">Pitch Deck (Optional)</Label>
+                            <input
+                              ref={(el) => { fileInputRefs.current['pitch'] = el; }}
+                              id="pitchDeck"
+                              type="file"
+                              accept={ACCEPTED_FILE_TYPES.PITCH_DECK}
+                              className="hidden"
+                              onChange={(e) => {
+                                handleFileSelect('PITCH_DECK', 'Pitch Deck', e.target.files);
+                                e.target.value = '';
+                              }}
+                            />
+                            <div className="flex items-center gap-3">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => fileInputRefs.current['pitch']?.click()}
+                              >
+                                <Upload className="h-4 w-4 mr-2" />
+                                {getSelectedFile('PITCH_DECK') ? 'Replace' : 'Select File'}
+                              </Button>
+                              {getSelectedFile('PITCH_DECK') && (
+                                <span className="text-sm text-muted-foreground truncate">
+                                  {getSelectedFile('PITCH_DECK')?.file.name}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              PDF or PowerPoint format. Max 50MB
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Financial Documents */}
                         <div className="rounded-lg border-2 border-dashed border-border bg-secondary/20 p-6">
                           <div className="space-y-2">
                             <Label htmlFor="financials">Financial Documents (Optional)</Label>
-                            <Input
+                            <input
+                              ref={(el) => { fileInputRefs.current['financial'] = el; }}
                               id="financials"
                               type="file"
-                              accept=".pdf,.xlsx,.xls"
+                              accept={ACCEPTED_FILE_TYPES.FINANCIAL_DOCUMENT}
                               multiple
+                              className="hidden"
+                              onChange={(e) => {
+                                handleFileSelect('FINANCIAL_DOCUMENT', 'Financial Document', e.target.files);
+                                e.target.value = '';
+                              }}
                             />
+                            <div className="flex items-center gap-3">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => fileInputRefs.current['financial']?.click()}
+                              >
+                                <Upload className="h-4 w-4 mr-2" />
+                                Add Files
+                              </Button>
+                              {getSelectedFiles('FINANCIAL_DOCUMENT').length > 0 && (
+                                <span className="text-sm text-muted-foreground">
+                                  {getSelectedFiles('FINANCIAL_DOCUMENT').length} file(s) selected
+                                </span>
+                              )}
+                            </div>
                             <p className="text-xs text-muted-foreground">
                               Financial statements, projections, etc. (PDF or Excel)
                             </p>
                           </div>
                         </div>
 
+                        {/* Other Documents */}
                         <div className="rounded-lg border-2 border-dashed border-border bg-secondary/20 p-6">
                           <div className="space-y-2">
                             <Label htmlFor="otherDocs">Other Documents (Optional)</Label>
-                            <Input
+                            <input
+                              ref={(el) => { fileInputRefs.current['other'] = el; }}
                               id="otherDocs"
                               type="file"
+                              accept={ACCEPTED_FILE_TYPES.DOCUMENT}
                               multiple
+                              className="hidden"
+                              onChange={(e) => {
+                                handleFileSelect('DOCUMENT', 'Other Document', e.target.files);
+                                e.target.value = '';
+                              }}
                             />
+                            <div className="flex items-center gap-3">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => fileInputRefs.current['other']?.click()}
+                              >
+                                <Upload className="h-4 w-4 mr-2" />
+                                Add Files
+                              </Button>
+                              {getSelectedFiles('DOCUMENT').length > 0 && (
+                                <span className="text-sm text-muted-foreground">
+                                  {getSelectedFiles('DOCUMENT').length} file(s) selected
+                                </span>
+                              )}
+                            </div>
                             <p className="text-xs text-muted-foreground">
                               Business plan, market research, certifications, etc.
                             </p>
@@ -1146,10 +1413,10 @@ export default function Register() {
                               What Happens Next?
                             </h4>
                             <ul className="space-y-1 text-sm text-muted-foreground">
+                              <li>• Documents will be uploaded after you submit your registration</li>
                               <li>• Our team will review your submission within 2-3 business days</li>
                               <li>• You'll receive an email notification once approved</li>
-                              <li>• Your business profile will go live on the platform</li>
-                              <li>• You'll get access to your dashboard to manage inquiries</li>
+                              <li>• You can upload more documents from your dashboard after login</li>
                             </ul>
                           </div>
                         </div>
@@ -1277,21 +1544,46 @@ export default function Register() {
                         </AlertDescription>
                       </Alert>
 
+                      {/* Upload progress indicator */}
+                      {isUploadingFiles && (
+                        <div className="rounded-lg border bg-secondary/20 p-4 space-y-3">
+                          <div className="flex items-center gap-3">
+                            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                            <span className="font-medium">{uploadStatus}</span>
+                          </div>
+                          <Progress value={uploadProgress} className="h-2" />
+                          <p className="text-xs text-muted-foreground">
+                            Uploading documents... {uploadProgress}% complete
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Show selected files count */}
+                      {documentFiles.length > 0 && !isSubmitting && !isUploadingFiles && (
+                        <Alert>
+                          <FileText className="h-4 w-4" />
+                          <AlertDescription>
+                            {documentFiles.length} document(s) will be uploaded after registration.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
                       <div className="flex justify-between">
-                        <Button type="button" onClick={() => nextTab("documents")} variant="outline">
+                        <Button type="button" onClick={() => nextTab("documents")} variant="outline" disabled={isSubmitting || isUploadingFiles}>
                           <ArrowLeft className="mr-2 h-4 w-4" />
                           Back
                         </Button>
-                        <Button type="submit" variant="hero" size="lg" disabled={isSubmitting || !formData.acceptTerms}>
-                          {isSubmitting ? (
+                        <Button type="submit" variant="hero" size="lg" disabled={isSubmitting || isUploadingFiles || !formData.acceptTerms}>
+                          {isSubmitting || isUploadingFiles ? (
                             <>
                               <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                              Submitting...
+                              {isUploadingFiles ? 'Uploading Documents...' : 'Submitting...'}
                             </>
                           ) : (
                             <>
                               <CheckCircle className="mr-2 h-5 w-5" />
                               Submit Registration
+                              {documentFiles.length > 0 && ` (${documentFiles.length} files)`}
                             </>
                           )}
                         </Button>

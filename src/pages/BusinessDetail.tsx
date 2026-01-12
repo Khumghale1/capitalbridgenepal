@@ -234,8 +234,16 @@ export default function BusinessDetail() {
               {/* Business Header */}
               <div className="mb-8 rounded-xl border border-border bg-card p-6 md:p-8">
                 <div className="flex flex-col gap-6 md:flex-row md:items-start">
-                  <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-secondary md:h-24 md:w-24">
-                    <Building2 className="h-10 w-10 text-muted-foreground md:h-12 md:w-12" />
+                  <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-secondary md:h-24 md:w-24 overflow-hidden">
+                    {business.logoUrl ? (
+                      <img
+                        src={business.logoUrl}
+                        alt={business.name}
+                        className="h-16 w-16 md:h-20 md:w-20 rounded-lg object-contain"
+                      />
+                    ) : (
+                      <Building2 className="h-10 w-10 text-muted-foreground md:h-12 md:w-12" />
+                    )}
                   </div>
                   <div className="flex-1">
                     <div className="mb-3 flex flex-wrap items-center gap-2">
