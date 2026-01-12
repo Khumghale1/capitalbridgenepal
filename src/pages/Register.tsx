@@ -186,17 +186,7 @@ export default function Register() {
     return null;
   };
 
-  const validatePhone = (phone: string): string | null => {
-    if (!phone) return null;
-    const cleanPhone = phone.replace(/[\s\-\(\)]/g, "");
-    if (cleanPhone.length < 10) {
-      return "Phone number must be at least 10 digits";
-    }
-    if (!/^\+?[0-9]+$/.test(cleanPhone)) {
-      return "Phone number can only contain digits, +, spaces, hyphens, and parentheses";
-    }
-    return null;
-  };
+
 
   const validateURL = (url: string): string | null => {
     if (!url) return null;
@@ -231,9 +221,6 @@ export default function Register() {
     switch (field) {
       case "email":
         error = validateEmail(value as string);
-        break;
-      case "phone":
-        error = validatePhone(value as string);
         break;
       case "website":
       case "linkedin":
@@ -473,6 +460,7 @@ export default function Register() {
     "Retail & E-commerce",
     "Real Estate",
     "Energy & Renewable",
+    "Investment",
     "Food & Beverage",
     "Other",
   ];
@@ -484,6 +472,7 @@ export default function Register() {
     "Series B",
     "Series C+",
     "Growth Stage",
+    "Operational",
     "Revenue Generating",
   ];
 
@@ -519,9 +508,6 @@ export default function Register() {
       }
       if (!formData.phone.trim()) {
         newErrors.phone = "Phone number is required";
-      } else {
-        const phoneError = validatePhone(formData.phone);
-        if (phoneError) newErrors.phone = phoneError;
       }
       if (!formData.address.trim()) {
         newErrors.address = "Address is required";

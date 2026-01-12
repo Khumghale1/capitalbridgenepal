@@ -22,21 +22,23 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/80">
       {/* Desktop Header */}
       <div className="container relative flex h-16 items-center justify-between gap-4 md:h-18">
-        {/* Logo */}
-        <Link
-          to="/"
-          className="flex items-center gap-2 transition-opacity hover:opacity-80"
-        >
-          <img
-            src="/images/510be80db44060f3131651fdf4d26c58e86d4442.png"
-            alt="AarthiQ Logo"
-            className="h-10 w-10 md:h-12 md:w-12"
-          />
-          <span className="text-lg font-bold text-foreground md:text-xl">
-            Aarthi
-            <span className="text-primary">Q</span>
-          </span>
-        </Link>
+        {/* Logo - Left on Desktop, Centered on Mobile/Tablet */}
+        <div className="flex-1 lg:flex-none">
+          <Link
+            to="/"
+            className="flex items-center gap-2 transition-opacity hover:opacity-80 lg:justify-start justify-center"
+          >
+            <img
+              src="/images/510be80db44060f3131651fdf4d26c58e86d4442.png"
+              alt="AarthiQ Logo"
+              className="h-10 w-10 md:h-12 md:w-12"
+            />
+            <span className="text-lg font-bold text-foreground md:text-xl">
+              Aarthi
+              <span className="text-primary">Q</span>
+            </span>
+          </Link>
+        </div>
 
         {/* Desktop Navigation */}
         <nav className="hidden items-center gap-1 lg:flex">

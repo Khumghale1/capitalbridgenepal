@@ -246,8 +246,8 @@ export default function Index() {
 
   return (
     <Layout>
-      {/* Hero Section */}
-      <section className="relative overflow-visible flex items-center justify-center bg-[#DBE5E1] py-16 lg:py-20 lg:min-h-[70vh]">
+    {/* Hero Section */}
+      <section className="relative overflow-visible flex items-center justify-center bg-[#DBE5E1]  lg:py-20 lg:min-h-[70vh]">
         <div className="relative mx-auto hidden lg:block w-[1358px] rounded-[15px]">
 
           {/* Text Content - Left Side */}
@@ -303,18 +303,18 @@ export default function Index() {
             </div>
 
             {/* Text in Middle */}
-            <div className="flex flex-col gap-4 text-center">
-              <h1 className="text-4xl font-extrabold tracking-tight text-foreground md:text-5xl leading-tight">
-                Access Exclusive Investment<br />
-                Opportunities in Nepal
+            <div className="flex flex-col gap-4 text-center w-full px-4 md:px-0">
+              <h1 className="text-2xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-foreground leading-tight">
+                Access Exclusive <span className="text-green-400">Investment</span><br />
+                <span className="text-green-400">Opportunities</span> in Nepal.
               </h1>
-              <p className="text-base text-foreground md:text-lg">
+              <p className="text-sm md:text-base lg:text-lg text-foreground">
                 Explore top unlisted companies and build long-term wealth through informed decision.
               </p>
             </div>
 
             {/* Buttons at Bottom */}
-            <div className="flex flex-row items-center gap-4 justify-center">
+            <div className="flex  items-center gap-4 justify-center">
               <Link to="/businesses">
                 <Button variant="hero" size="xl">
                   Browse Businesses
@@ -332,34 +332,41 @@ export default function Index() {
           </div>
         </div>
 
-        {/* Mobile View - No image, centered text and buttons */}
-        <div className="relative w-full px-4 py-16 md:hidden">
+        {/* Mobile View - Image as background */}
+        <div className="relative w-full px-3 py-5 md:hidden ">
           <div className="max-w-xl mx-auto flex flex-col items-center gap-6 text-center">
             {/* Centered Text */}
-            <h1 className="text-3xl font-extrabold tracking-tight text-foreground leading-tight">
-              Access Exclusive Investment<br />
-              Opportunities in Nepal
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-foreground leading-tight">
+              Access Exclusive <span className="text-green-800">Investment</span><br />
+              <span className="text-green-800">Opportunities</span> in Nepal
             </h1>
-            <p className="text-base text-foreground">
+            <p className="text-sm md:text-base text-foreground">
               Explore top unlisted companies and build long-term wealth through informed decision.
             </p>
 
-            {/* Centered Buttons - Stacked Vertically */}
-            <div className="flex flex-col items-center gap-4 w-full">
-              <Link to="/businesses" className="w-full max-w-xs">
-                <Button variant="hero" size="xl" className="w-full">
+            {/* Centered Buttons - Side by Side */}
+            <div className="flex flex-row items-center gap-2 w-full justify-center flex-wrap">
+              <Link to="/businesses" className="flex-1 min-w-fit">
+                <Button variant="hero"  className=" px-4 py-1 text-xs w-full">
                   Browse Businesses
-                  <ArrowRight className="h-5 w-5" />
                 </Button>
               </Link>
               <Button
                 onClick={() => setIsModalOpen(true)}
                 variant="hero-outline"
-                size="xl"
-                className="w-full max-w-xs"
+                className=" px-4 py-1 text-xs flex-1 min-w-fit"
               >
                 List Your Business
               </Button>
+            </div>
+
+            {/* Image Below */}
+            <div className="w-full mt-6">
+              <img
+                src="/images/9e8992070dba3d515547d05d8848e3aa1b68be42.png"
+                alt="Investment Opportunities Illustration"
+                className="w-full h-auto max-w-sm mx-auto rounded-[20px]"
+              />
             </div>
           </div>
         </div>
@@ -412,7 +419,7 @@ export default function Index() {
             <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start lg:items-center mb-16">
               {/* Left Side - Text */}
               <div className="flex-1">
-                <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-4">
                   Backed by Real Numbers
                 </h2>
                 <p className="text-base text-muted-foreground leading-relaxed">
@@ -423,13 +430,13 @@ export default function Index() {
               {/* Right Side - Stats */}
               <div className="flex gap-8 lg:gap-12">
                 <div className="text-center">
-                  <p className="text-4xl md:text-5xl font-bold text-foreground mb-2">
+                  <p className="text-2xl md:text-5xl font-bold text-foreground mb-2">
                     {stats.connectionsMade}+
                   </p>
                   <p className="text-sm text-muted-foreground">Connections Made</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-4xl md:text-5xl font-bold text-foreground mb-2">
+                  <p className="text-2xl md:text-5xl font-bold text-foreground mb-2">
                     {stats.totalCategories}
                   </p>
                   <p className="text-sm text-muted-foreground">Investment Sectors</p>
@@ -440,10 +447,10 @@ export default function Index() {
             {/* Explore Our Sectors */}
             <div className="mb-16">
               <div className="mb-10 text-center">
-                <h2 className="mb-2 text-3xl font-bold text-foreground md:text-4xl">
+                <h2 className="mb-2 text-2xl font-bold text-foreground md:text-4xl">
                   Explore Our Sectors
                 </h2>
-                <p className="text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   Find investment opportunities in your preferred sector
                 </p>
               </div>
