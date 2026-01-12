@@ -3,6 +3,7 @@ import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BusinessCard } from "@/components/business/BusinessCard";
+import { extractYouTubeVideoId, getYouTubeEmbedUrl } from "@/utils/youtube";
 import {
   Dialog,
   DialogContent,
@@ -63,6 +64,20 @@ interface Business {
   status?: string;
 }
 
+interface BusinessMedia {
+  id: string;
+  businessId: string;
+  mediaType: 'PITCH_DECK' | 'VIDEO' | 'BROCHURE' | 'GALLERY' | 'COMPANY_LOGO' | 'YOUTUBE_VIDEO' | 'WEBSITE';
+  fileName: string;
+  fileUrl: string;
+  externalUrl?: string;
+  fileSize: string;
+  mimeType: string;
+  title?: string;
+  description?: string;
+  displayOrder?: number;
+}
+
 function formatCurrency(amount: number): string {
   if (amount >= 10000000) {
     return `${(amount / 10000000).toFixed(1)} Crore`;
@@ -70,6 +85,10 @@ function formatCurrency(amount: number): string {
     return `${(amount / 100000).toFixed(1)} Lakhs`;
   }
   return `${(amount / 1000).toFixed(0)}K`;
+}
+
+function formatPricePerUnit(amount: number): string {
+  return amount.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 0 });
 }
 
 export default function BusinessDetail() {
@@ -81,6 +100,8 @@ export default function BusinessDetail() {
   const [relatedBusinesses, setRelatedBusinesses] = useState<Business[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [openModal, setOpenModal] = useState<string | null>(null);
+  const [media, setMedia] = useState<BusinessMedia[]>([]);
+  const [mediaLoading, setMediaLoading] = useState(false);
   const [interestFormData, setInterestFormData] = useState({
     investorName: "",
     email: "",
@@ -118,6 +139,9 @@ export default function BusinessDetail() {
         .slice(0, 3);
 
       setRelatedBusinesses(related);
+
+      // Fetch media for this business
+      await fetchBusinessMedia(id!);
     } catch (error) {
       console.error("Failed to fetch business details:", error);
       toast({
@@ -127,6 +151,21 @@ export default function BusinessDetail() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchBusinessMedia = async (businessId: string) => {
+    try {
+      setMediaLoading(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response: any = await api.upload.getMedia(businessId);
+      const mediaData = response.media || response || [];
+      setMedia(Array.isArray(mediaData) ? mediaData : []);
+    } catch (error) {
+      console.error("Failed to fetch business media:", error);
+      setMedia([]);
+    } finally {
+      setMediaLoading(false);
     }
   };
 
@@ -370,7 +409,7 @@ export default function BusinessDetail() {
                           <p className="text-sm font-medium text-muted-foreground">Price per Unit</p>
                           <Info className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
-                        <p className="mt-1 text-2xl font-bold text-primary">NPR {formatCurrency(business.pricePerUnit)}</p>
+                        <p className="mt-1 text-2xl font-bold text-primary">NPR {formatPricePerUnit(business.pricePerUnit)}</p>
                       </div>
                     )}
                     {business.expectedReturnOptions && (
@@ -454,7 +493,7 @@ export default function BusinessDetail() {
                       <div className="space-y-2">
                         <h4 className="font-semibold">Minimum Investment Amount</h4>
                         <p className="text-sm text-muted-foreground">
-                          At NPR {formatCurrency(business.pricePerUnit)} per unit, your minimum investment would be:
+                          At NPR {formatPricePerUnit(business.pricePerUnit)} per unit, your minimum investment would be:
                         </p>
                         <p className="text-2xl font-bold text-primary">
                           NPR {formatCurrency((business.minimumInvestmentUnits || 0) * business.pricePerUnit)}
@@ -488,7 +527,7 @@ export default function BusinessDetail() {
                       <div className="space-y-2">
                         <h4 className="font-semibold">Maximum Investment Amount</h4>
                         <p className="text-sm text-muted-foreground">
-                          At NPR {formatCurrency(business.pricePerUnit)} per unit, your maximum investment would be:
+                          At NPR {formatPricePerUnit(business.pricePerUnit)} per unit, your maximum investment would be:
                         </p>
                         <p className="text-2xl font-bold text-primary">
                           NPR {formatCurrency((business.maximumInvestmentUnits || 0) * business.pricePerUnit)}
@@ -509,7 +548,7 @@ export default function BusinessDetail() {
                   </DialogHeader>
                   <div className="space-y-4">
                     <div className="rounded-lg bg-primary/5 p-4 border border-primary/20">
-                      <p className="text-3xl font-bold text-primary">NPR {business?.pricePerUnit ? formatCurrency(business.pricePerUnit) : 'N/A'}</p>
+                      <p className="text-3xl font-bold text-primary">NPR {business?.pricePerUnit ? formatPricePerUnit(business.pricePerUnit) : 'N/A'}</p>
                       <p className="text-sm text-muted-foreground mt-1">per unit</p>
                     </div>
                     <div className="space-y-2">
@@ -734,22 +773,167 @@ export default function BusinessDetail() {
                     </button>
                   ))}
                 </div>
-                <div className="rounded-lg border border-border bg-secondary/30 p-8 text-center">
-                  <FileText className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                  <p className="mb-2 font-medium text-foreground">
-                    {activeTab === "pitch-deck" && "Pitch Deck Available"}
-                    {activeTab === "videos" && "Company Video"}
-                    {activeTab === "brochures" && "Business Brochure"}
-                    {activeTab === "gallery" && "Photo Gallery"}
-                  </p>
-                  <p className="mb-4 text-sm text-muted-foreground">
-                    Submit your interest to request access to materials
-                  </p>
-                  <Button variant="outline">
-                    <FileText className="h-4 w-4" />
-                    Request Access
-                  </Button>
-                </div>
+
+                {mediaLoading ? (
+                  <div className="rounded-lg border border-border bg-secondary/30 p-8 text-center">
+                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
+                    <p className="mt-2 text-sm text-muted-foreground">Loading media...</p>
+                  </div>
+                ) : null}
+
+                {!mediaLoading && activeTab === "pitch-deck" && (
+                  <div>
+                    {media.filter(m => m.mediaType === 'PITCH_DECK').length > 0 ? (
+                      <div className="space-y-3">
+                        {media.filter(m => m.mediaType === 'PITCH_DECK').map((item) => (
+                          <div key={item.id} className="flex items-center justify-between rounded-lg border border-border p-4 hover:bg-secondary/30 transition-colors">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <FileText className="h-8 w-8 text-primary flex-shrink-0" />
+                              <div className="min-w-0">
+                                <p className="font-medium text-foreground truncate">{item.title || item.fileName}</p>
+                                <p className="text-xs text-muted-foreground">{(parseInt(item.fileSize) / 1024 / 1024).toFixed(2)} MB</p>
+                              </div>
+                            </div>
+                            <a
+                              href={item.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="ml-2 inline-flex items-center justify-center h-10 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex-shrink-0"
+                            >
+                              View
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-border bg-secondary/30 p-8 text-center">
+                        <FileText className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                        <p className="mb-2 font-medium text-foreground">No Pitch Deck Available</p>
+                        <p className="text-sm text-muted-foreground">The business hasn't uploaded a pitch deck yet</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {!mediaLoading && activeTab === "videos" && (
+                  <div>
+                    {media.filter(m => m.mediaType === 'VIDEO' || m.mediaType === 'YOUTUBE_VIDEO').length > 0 ? (
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        {media.filter(m => m.mediaType === 'VIDEO' || m.mediaType === 'YOUTUBE_VIDEO').map((item) => {
+                          const videoId = extractYouTubeVideoId(item.fileUrl || item.externalUrl || '');
+                          const embedUrl = videoId ? getYouTubeEmbedUrl(videoId) : null;
+
+                          return (
+                            <div key={item.id} className="rounded-lg overflow-hidden border border-border hover:border-primary transition-colors">
+                              {embedUrl ? (
+                                <iframe
+                                  width="100%"
+                                  height="200"
+                                  src={embedUrl}
+                                  title={item.title || item.fileName}
+                                  frameBorder="0"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                  allowFullScreen
+                                  className="w-full aspect-video"
+                                />
+                              ) : (
+                                <div className="aspect-video bg-secondary flex items-center justify-center">
+                                  <Video className="h-12 w-12 text-muted-foreground" />
+                                </div>
+                              )}
+                              <div className="p-3">
+                                <p className="font-medium text-foreground text-sm truncate">{item.title || item.fileName}</p>
+                                {!embedUrl && (
+                                  <a
+                                    href={item.fileUrl || item.externalUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="mt-2 inline-flex items-center text-xs text-primary hover:underline"
+                                  >
+                                    Watch Video →
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-border bg-secondary/30 p-8 text-center">
+                        <Video className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                        <p className="mb-2 font-medium text-foreground">No Videos Available</p>
+                        <p className="text-sm text-muted-foreground">The business hasn't uploaded any videos yet</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {!mediaLoading && activeTab === "brochures" && (
+                  <div>
+                    {media.filter(m => m.mediaType === 'BROCHURE').length > 0 ? (
+                      <div className="space-y-3">
+                        {media.filter(m => m.mediaType === 'BROCHURE').map((item) => (
+                          <div key={item.id} className="flex items-center justify-between rounded-lg border border-border p-4 hover:bg-secondary/30 transition-colors">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <FileText className="h-8 w-8 text-blue-500 flex-shrink-0" />
+                              <div className="min-w-0">
+                                <p className="font-medium text-foreground truncate">{item.title || item.fileName}</p>
+                                <p className="text-xs text-muted-foreground">{(parseInt(item.fileSize) / 1024 / 1024).toFixed(2)} MB</p>
+                              </div>
+                            </div>
+                            <a
+                              href={item.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="ml-2 inline-flex items-center justify-center h-10 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex-shrink-0"
+                            >
+                              View
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-border bg-secondary/30 p-8 text-center">
+                        <FileText className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                        <p className="mb-2 font-medium text-foreground">No Brochures Available</p>
+                        <p className="text-sm text-muted-foreground">The business hasn't uploaded any brochures yet</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {!mediaLoading && activeTab === "gallery" && (
+                  <div>
+                    {media.filter(m => m.mediaType === 'GALLERY').length > 0 ? (
+                      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+                        {media.filter(m => m.mediaType === 'GALLERY').map((item) => (
+                          <a
+                            key={item.id}
+                            href={item.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group relative overflow-hidden rounded-lg border border-border hover:border-primary transition-colors"
+                          >
+                            <img
+                              src={item.fileUrl}
+                              alt={item.title || item.fileName}
+                              className="aspect-square object-cover group-hover:scale-105 transition-transform"
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                              <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-sm font-medium">View</span>
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-border bg-secondary/30 p-8 text-center">
+                        <Image className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                        <p className="mb-2 font-medium text-foreground">No Gallery Images Available</p>
+                        <p className="text-sm text-muted-foreground">The business hasn't uploaded any gallery images yet</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Contact Info */}

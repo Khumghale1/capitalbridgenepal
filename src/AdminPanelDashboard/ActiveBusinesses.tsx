@@ -526,6 +526,40 @@ export default function ActiveBusinesses() {
                 </div>
               </div>
 
+              {/* Documents */}
+              {selectedBusiness.media && selectedBusiness.media.length > 0 && (
+                <div>
+                  <h4 className="font-semibold mb-3 text-base">Uploaded Documents & Media</h4>
+                  <div className="space-y-3">
+                    {selectedBusiness.media.map((doc: any) => (
+                      <div key={doc.id} className="flex items-center justify-between rounded-lg border p-3 bg-secondary/30">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                            <Eye className="h-4 w-4 text-blue-600" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-sm truncate">{doc.fileName || doc.title || doc.mediaType}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {doc.mediaType} {doc.fileSize && `• ${(parseInt(doc.fileSize) / 1024).toFixed(2)} KB`}
+                            </p>
+                          </div>
+                        </div>
+                        {doc.fileUrl && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(doc.fileUrl, '_blank')}
+                            className="ml-2 flex-shrink-0"
+                          >
+                            View
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Status & Metrics */}
               <div>
                 <h4 className="font-semibold mb-3 text-base">Status & Metrics</h4>

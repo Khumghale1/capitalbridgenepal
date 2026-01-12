@@ -33,10 +33,13 @@ import {
   XCircle,
   Lock,
   X,
+  Plus,
+  Play,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { MediaType } from "@/types/media";
 import { ACCEPTED_FILE_TYPES } from "@/types/media";
+import { isValidYouTubeUrl } from "@/utils/youtube";
 
 // Document file types for registration
 interface DocumentFile {
@@ -65,6 +68,8 @@ export default function Register() {
 
   // Document files state
   const [documentFiles, setDocumentFiles] = useState<DocumentFile[]>([]);
+  const [youtubeUrls, setYoutubeUrls] = useState<string[]>([]);
+  const [youtubeInput, setYoutubeInput] = useState("");
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const [formData, setFormData] = useState({
@@ -303,16 +308,48 @@ export default function Register() {
     return documentFiles.filter(f => f.mediaType === mediaType);
   };
 
+  const handleAddYoutubeUrl = () => {
+    if (!youtubeInput.trim()) {
+      return;
+    }
+
+    if (!isValidYouTubeUrl(youtubeInput)) {
+      toast({
+        title: "Invalid YouTube URL",
+        description: "Please enter a valid YouTube URL",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (youtubeUrls.includes(youtubeInput)) {
+      toast({
+        title: "Duplicate URL",
+        description: "This URL has already been added",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setYoutubeUrls([...youtubeUrls, youtubeInput]);
+    setYoutubeInput("");
+  };
+
+  const handleRemoveYoutubeUrl = (url: string) => {
+    setYoutubeUrls(youtubeUrls.filter(u => u !== url));
+  };
+
   // Upload all documents after registration
   const uploadDocuments = async (businessId: string) => {
-    if (documentFiles.length === 0) return;
+    if (documentFiles.length === 0 && youtubeUrls.length === 0) return;
 
     setIsUploadingFiles(true);
     setUploadProgress(0);
 
-    const totalFiles = documentFiles.length;
+    const totalItems = documentFiles.length + youtubeUrls.length;
     let uploadedCount = 0;
 
+    // Upload document files
     for (const docFile of documentFiles) {
       try {
         setUploadStatus(`Uploading ${docFile.label}...`);
@@ -324,10 +361,23 @@ export default function Register() {
         }
 
         uploadedCount++;
-        setUploadProgress(Math.round((uploadedCount / totalFiles) * 100));
+        setUploadProgress(Math.round((uploadedCount / totalItems) * 100));
       } catch (error) {
         console.error(`Failed to upload ${docFile.label}:`, error);
         // Continue with other files even if one fails
+      }
+    }
+
+    // Upload YouTube URLs
+    for (const url of youtubeUrls) {
+      try {
+        setUploadStatus("Adding YouTube video...");
+        await api.upload.addExternalUrl(businessId, 'YOUTUBE_VIDEO', url);
+        uploadedCount++;
+        setUploadProgress(Math.round((uploadedCount / totalItems) * 100));
+      } catch (error) {
+        console.error('Failed to add YouTube video:', error);
+        // Continue with other videos even if one fails
       }
     }
 
@@ -1403,6 +1453,63 @@ export default function Register() {
                             </p>
                           </div>
                         </div>
+                      </div>
+
+                      {/* YouTube Videos Section */}
+                      <div className="space-y-4">
+                        <div>
+                          <Label>YouTube Videos (Optional)</Label>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Add YouTube links to showcase your business (e.g., company overview, product demo, testimonials)
+                          </p>
+                        </div>
+
+                        {/* Existing YouTube URLs */}
+                        {youtubeUrls.length > 0 && (
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-medium">Added Videos ({youtubeUrls.length})</h4>
+                            {youtubeUrls.map((url, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center justify-between rounded-md bg-secondary/30 p-3 border"
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <Play className="h-4 w-4 text-red-500 flex-shrink-0" />
+                                  <p className="text-sm truncate text-muted-foreground">{url}</p>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRemoveYoutubeUrl(url)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* YouTube URL Input */}
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
+                            value={youtubeInput}
+                            onChange={(e) => setYoutubeInput(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleAddYoutubeUrl()}
+                          />
+                          <Button
+                            type="button"
+                            onClick={handleAddYoutubeUrl}
+                            variant="outline"
+                            disabled={!youtubeInput.trim()}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        {youtubeInput && !isValidYouTubeUrl(youtubeInput) && (
+                          <p className="text-xs text-destructive">Invalid YouTube URL</p>
+                        )}
                       </div>
 
                       <div className="rounded-lg bg-teal-50 p-6">

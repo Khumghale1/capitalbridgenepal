@@ -16,11 +16,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, Globe, Phone, Mail, Loader2, Upload, FileText, Trash2, CheckCircle2, AlertCircle, X } from "lucide-react";
+import { Building2, Globe, Phone, Mail, Loader2, Upload, FileText, Trash2, CheckCircle2, AlertCircle, X, Play } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import type { BusinessMedia, MediaType } from "@/types/media";
 import { MEDIA_TYPE_LABELS, ACCEPTED_FILE_TYPES, formatFileSize } from "@/types/media";
+import { isValidYouTubeUrl } from "@/utils/youtube";
 
 // Same options as Register.tsx
 const industries = [
@@ -84,6 +85,8 @@ export default function Profile() {
   // Media/Upload state
   const [existingMedia, setExistingMedia] = useState<BusinessMedia[]>([]);
   const [uploadStates, setUploadStates] = useState<Record<string, UploadState>>({});
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [youtubeLoading, setYoutubeLoading] = useState(false);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const [formData, setFormData] = useState({
@@ -297,6 +300,8 @@ export default function Profile() {
       return;
     }
 
+    console.log('Uploading file:', { mediaType, businessId: businessData.id, fileName: file.name });
+
     // Update upload state
     setUploadStates(prev => ({
       ...prev,
@@ -353,7 +358,11 @@ export default function Profile() {
       }
 
     } catch (error) {
+      console.error('Upload error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Upload failed';
+      const errorDetails = error instanceof Error && 'response' in error ? JSON.stringify((error as any).response) : '';
+      console.error('Error details:', errorDetails);
+      
       setUploadStates(prev => ({
         ...prev,
         [key]: { ...prev[key], uploading: false, error: errorMessage }
@@ -403,6 +412,43 @@ export default function Profile() {
         description: error instanceof Error ? error.message : 'Failed to delete',
         variant: "destructive",
       });
+    }
+  };
+
+  const handleAddYoutubeVideo = async () => {
+    if (!youtubeUrl.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a YouTube URL",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setYoutubeLoading(true);
+      await api.upload.addExternalUrl(businessData.id, 'YOUTUBE_VIDEO', youtubeUrl);
+
+      toast({
+        title: "Success",
+        description: "YouTube video added successfully",
+      });
+
+      setYoutubeUrl('');
+
+      // Refresh media list
+      if (businessData?.id) {
+        const mediaResponse = await api.upload.getMedia(businessData.id);
+        setExistingMedia(Array.isArray(mediaResponse.media) ? mediaResponse.media : []);
+      }
+    } catch (error) {
+      toast({
+        title: "Failed to add video",
+        description: error instanceof Error ? error.message : 'Please try again',
+        variant: "destructive",
+      });
+    } finally {
+      setYoutubeLoading(false);
     }
   };
 
@@ -1131,6 +1177,100 @@ export default function Profile() {
               </div>
             );
           })}
+        </CardContent>
+      </Card>
+
+      {/* YouTube Videos */}
+      <Card>
+        <CardHeader>
+          <CardTitle>YouTube Videos</CardTitle>
+          <CardDescription>
+            Add YouTube links to showcase your business (e.g., company overview, product demo, testimonials)
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Existing YouTube videos */}
+          {existingMedia.filter(m => m.mediaType === 'YOUTUBE_VIDEO').length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-sm font-medium">Your Videos</h3>
+              {existingMedia.filter(m => m.mediaType === 'YOUTUBE_VIDEO').map((media) => (
+                <div
+                  key={media.id}
+                  className="flex items-center justify-between rounded-md bg-secondary/30 p-4 border"
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className="h-8 w-8 rounded bg-red-500/10 flex items-center justify-center flex-shrink-0">
+                      <Play className="h-4 w-4 text-red-500" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {media.title || 'YouTube Video'}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {media.externalUrl || media.fileUrl}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 flex-shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(media.externalUrl || media.fileUrl, '_blank')}
+                    >
+                      View
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteMedia(media.id, 'YOUTUBE_VIDEO')}
+                      disabled={!isEditing}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add YouTube URL form */}
+          <div className="space-y-3 pt-4 border-t">
+            <div>
+              <Label htmlFor="youtubeUrl">YouTube URL</Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Paste your YouTube link: https://www.youtube.com/watch?v=VIDEO_ID or https://youtu.be/VIDEO_ID
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                id="youtubeUrl"
+                placeholder="https://www.youtube.com/watch?v=..."
+                value={youtubeUrl}
+                onChange={(e) => setYoutubeUrl(e.target.value)}
+                disabled={!isEditing || youtubeLoading}
+              />
+              <Button
+                onClick={handleAddYoutubeVideo}
+                disabled={!isEditing || youtubeLoading || !youtubeUrl.trim()}
+                className="whitespace-nowrap"
+              >
+                {youtubeLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    Add Video
+                  </>
+                )}
+              </Button>
+            </div>
+            {youtubeUrl && !isValidYouTubeUrl(youtubeUrl) && (
+              <p className="text-xs text-destructive">Invalid YouTube URL</p>
+            )}
+          </div>
         </CardContent>
       </Card>
     </BusinessDashboardLayout>
