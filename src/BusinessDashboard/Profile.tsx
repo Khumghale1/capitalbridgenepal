@@ -71,7 +71,7 @@ const DOCUMENT_TYPES: { key: string; mediaType: MediaType; label: string; accept
   { key: 'pan', mediaType: 'PAN_CERTIFICATE', label: 'PAN Certificate', accept: ACCEPTED_FILE_TYPES.PAN_CERTIFICATE, description: 'PDF or image format' },
   { key: 'pitchDeck', mediaType: 'PITCH_DECK', label: 'Pitch Deck', accept: ACCEPTED_FILE_TYPES.PITCH_DECK, description: 'PDF or PowerPoint. Max 50MB' },
   { key: 'financial', mediaType: 'FINANCIAL_DOCUMENT', label: 'Financial Documents', accept: ACCEPTED_FILE_TYPES.FINANCIAL_DOCUMENT, description: 'PDF or Excel format' },
-  { key: 'other', mediaType: 'DOCUMENT', label: 'Other Documents', accept: ACCEPTED_FILE_TYPES.DOCUMENT, description: 'PDF or Word format' },
+  { key: 'other', mediaType: 'DOCUMENT', label: 'Application Form', accept: ACCEPTED_FILE_TYPES.DOCUMENT, description: 'PDF or Word format' },
 ];
 
 export default function Profile() {

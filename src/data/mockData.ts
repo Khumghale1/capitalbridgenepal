@@ -164,6 +164,6 @@ export const categories = [
 export const stats = {
   totalBusinesses: 248,
   totalCategories: 12,
-  connectionsMade: 1250,
+  connectionsMade: 100,
   investmentFacilitated: "NPR 2.5 Billion+",
 };

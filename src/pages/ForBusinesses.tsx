@@ -95,7 +95,7 @@ export default function ForBusinesses() {
     { icon: FileText, label: "Pitch Deck (PDF/PPT)" },
     { icon: Video, label: "Company Videos" },
     { icon: FileText, label: "Financial Documents" },
-    { icon: ImageIcon, label: "Business Brochures" },
+    { icon: ImageIcon, label: "Application Forms" },
     { icon: Users, label: "Team Information" },
     { icon: ImageIcon, label: "Photos & Gallery" },
   ];
@@ -274,7 +274,7 @@ export default function ForBusinesses() {
                   "High-quality company logo display",
                   "Detailed investment opportunity description",
                   "Embedded video presentations",
-                  "Downloadable pitch deck and brochures",
+                  "Downloadable pitch deck and application forms",
                   "Team member profiles with photos",
                   "Direct contact information",
                   "Social media links integration",
@@ -383,7 +383,7 @@ export default function ForBusinesses() {
             </h2>
             <p className="mx-auto mb-8 max-w-2xl text-primary-foreground/90">
               Join the growing list of businesses connecting with investors on
-              AarthiQ. Your next investor is just a click away.
+              aarthiQ. Your next investor is just a click away.
             </p>
             <Link to="/register">
               <Button

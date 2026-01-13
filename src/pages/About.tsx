@@ -89,7 +89,7 @@ export default function About() {
               </h2>
               <div className="space-y-4 text-muted-foreground">
                 <p>
-                  AarthiQ was born from a simple observation: Nepal has
+                  aarthiQ was born from a simple observation: Nepal has
                   incredible entrepreneurial talent, but connecting businesses
                   with the right investors has always been a challenge.
                 </p>

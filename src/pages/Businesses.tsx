@@ -15,6 +15,7 @@ import {
   ChevronUp,
   Loader2,
 } from "lucide-react";
+import { InvestmentCard } from "@/components/business/InvestmentCard";
 
 interface Business {
   id: string;
@@ -356,7 +357,7 @@ export default function Businesses() {
                       onClick={() => handleViewDetails(business)}
                       className="cursor-pointer transition-transform hover:scale-[1.02]"
                     >
-                      <BusinessCard business={business} />
+                      <InvestmentCard business={business} />
                     </div>
                   ))}
                 </div>

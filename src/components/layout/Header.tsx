@@ -30,11 +30,11 @@ export function Header() {
           >
             <img
               src="/images/510be80db44060f3131651fdf4d26c58e86d4442.png"
-              alt="AarthiQ Logo"
+              alt="aarthiQ Logo"
               className="h-10 w-10 md:h-12 md:w-12"
             />
             <span className="text-lg font-bold text-foreground md:text-xl">
-              Aarthi
+              aarthi
               <span className="text-primary">Q</span>
             </span>
           </Link>

@@ -11,24 +11,24 @@ import {
 
 const footerLinks = {
   company: [
-    { label: "About Us", href: "/about" },
-    { label: "Contact Us", href: "/contact" },
-    { label: "How It Works", href: "/how-it-works" },
+    // { label: "About Us", href: "/about" },
+    // { label: "Contact Us", href: "/contact" },
+    // { label: "How It Works", href: "/how-it-works" },
   ],
   forBusinesses: [
-    { label: "For Businesses", href: "/for-businesses" },
+    // { label: "For Businesses", href: "/for-businesses" },
     { label: "Dashboard", href: "/business/dashboard" },
-    { label: "Get Started", href: "/register" },
+    // { label: "Get Started", href: "/register" },
   ],
   forInvestors: [
     { label: "Browse Businesses", href: "/businesses" },
-    { label: "Categories", href: "/categories" },
-    { label: "Explore Opportunities", href: "/businesses" },
+    // { label: "Categories", href: "/categories" },
+    // { label: "Explore Opportunities", href: "/businesses" },
   ],
   legal: [
-    { label: "Terms & Conditions", href: "/terms" },
-    { label: "Privacy Policy", href: "/privacy" },
-    { label: "Cookie Policy", href: "/cookies" },
+    // { label: "Terms & Conditions", href: "/terms" },
+    // { label: "Privacy Policy", href: "/privacy" },
+    // { label: "Cookie Policy", href: "/cookies" },
   ],
 };
 
@@ -50,11 +50,11 @@ export function Footer() {
             <Link to="/" className="mb-6 inline-flex items-center gap-3 group">
               <img
                 src="/images/510be80db44060f3131651fdf4d26c58e86d4442.png"
-                alt="AarthiQ Logo"
+                alt="aarthiQ Logo"
                 className="h-12 w-12 transition-transform group-hover:scale-105"
               />
               <span className="text-xl font-bold text-foreground">
-                Aarthi<span className="text-green-600">Q</span>
+                aarthi<span className="text-green-600">Q</span>
               </span>
             </Link>
             <p className="mb-6 max-w-sm text-sm text-muted-foreground leading-relaxed">
@@ -64,7 +64,7 @@ export function Footer() {
             <div className="space-y-3 text-sm">
               <div className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors">
                 <Mail className="h-4 w-4 text-primary flex-shrink-0" />
-                <a href="mailto:contact@aarthiq.com">contact@aarthiq.com</a>
+                <a href="mailto:info@aarthiqnepal.com">info@aarthiqnepal.com</a>
               </div>
               <div className="flex items-center gap-3 text-muted-foreground hover:text-primary transition-colors">
                 <Phone className="h-4 w-4 text-primary flex-shrink-0" />
@@ -78,7 +78,7 @@ export function Footer() {
           </div>
 
           {/* Company Links */}
-          <div>
+          {/* <div>
             <h4 className="mb-4 font-semibold text-foreground text-sm uppercase tracking-wide">
               Company
             </h4>
@@ -94,7 +94,7 @@ export function Footer() {
                 </li>
               ))}
             </ul>
-          </div>
+          </div> */}
 
           {/* For Businesses Links */}
           <div>
@@ -142,7 +142,7 @@ export function Footer() {
         <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
           {/* Left - Copyright */}
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Aarthi<span className="text-green-600">Q</span>. All rights reserved.
+            © {new Date().getFullYear()} aarthi<span className="text-green-600">Q</span>. All rights reserved.
           </p>
 
           {/* Center - Social Links */}
@@ -162,7 +162,7 @@ export function Footer() {
             ))}
           </div>
 
-          {/* Right - Legal Links */}
+          {/* Right - Legal Links
           <div className="flex items-center gap-4 text-xs">
             {footerLinks.legal.map((link, index) => (
               <div key={link.href} className="flex items-center gap-4">
@@ -175,7 +175,7 @@ export function Footer() {
                 {index < footerLinks.legal.length - 1 && <span className="text-border">•</span>}
               </div>
             ))}
-          </div>
+          </div> */}
         </div>
 
         {/* Made by */}

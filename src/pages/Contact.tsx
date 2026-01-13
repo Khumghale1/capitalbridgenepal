@@ -28,8 +28,8 @@ export default function Contact() {
     {
       icon: Mail,
       title: "Email",
-      value: "contact@aarthiq.com",
-      link: "mailto:contact@aarthiq.com",
+      value: "info@aarthiqnepal.com",
+      link: "mailto:info@aarthiqnepal.com",
     },
     {
       icon: Phone,

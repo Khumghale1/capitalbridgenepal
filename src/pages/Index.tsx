@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { BusinessCard } from "@/components/business/BusinessCard";
+import { InvestmentCard } from "@/components/business/InvestmentCard";
 import { CategoryCard } from "@/components/business/CategoryCard";
 import { stats } from "@/data/mockData";
 import {
@@ -36,8 +36,6 @@ import {
   Home,
   Heart,
   UtensilsCrossed,
-  ShoppingBag,
-  Layers,
   Mail,
   Phone,
   MapPin,
@@ -55,8 +53,6 @@ const categoryIcons: Record<string, any> = {
   "Real Estate": Home,
   Healthcare: Heart,
   "Food & Beverage": UtensilsCrossed,
-  Retail: ShoppingBag,
-  Others: Layers,
 };
 
 interface Business {
@@ -116,20 +112,21 @@ export default function Index() {
       const businessData = response.businesses || [];
       setBusinesses(businessData);
 
-      // Extract unique categories with counts
-      const categoryMap = new Map<string, number>();
+      // Count businesses per category
+      const categoryCountMap = new Map<string, number>();
       businessData.forEach((business: Business) => {
         const catName = business.category.name;
-        categoryMap.set(catName, (categoryMap.get(catName) || 0) + 1);
+        categoryCountMap.set(catName, (categoryCountMap.get(catName) || 0) + 1);
       });
 
-      const categoriesData = Array.from(categoryMap.entries()).map(([name, count]) => ({
+      // Show all sectors from categoryIcons, with count from businesses
+      const allCategories = Object.keys(categoryIcons).map((name) => ({
         name,
         slug: name.toLowerCase().replace(/\s+/g, '-'),
-        count
+        count: categoryCountMap.get(name) || 0
       }));
 
-      setCategories(categoriesData);
+      setCategories(allCategories);
     } catch (error) {
       console.error("Failed to fetch businesses:", error);
       toast({
@@ -246,15 +243,15 @@ export default function Index() {
 
   return (
     <Layout>
-    {/* Hero Section */}
-      <section className="relative overflow-visible flex items-center justify-center bg-[#DBE5E1]  lg:py-20 lg:min-h-[70vh]">
-        <div className="relative mx-auto hidden lg:block w-[1358px] rounded-[15px]">
+      {/* Hero Section */}
+      <section className="relative overflow-visible flex items-center justify-center bg-[#DBE5E1] lg:py-20 lg:min-h-[70vh]">
+        <div className="container relative hidden lg:block">
 
           {/* Text Content - Left Side */}
-          <div className="relative z-10 flex flex-col animate-fade-up w-[900px] pl-[10px] pt-[80px] pb-[80px] gap-[23px]">
+          <div className="relative z-10 flex flex-col animate-fade-up w-[900px] pt-[80px] pb-[80px] gap-[23px]">
             <h1 className="text-5xl font-extrabold text-foreground xl:text-6xl">
-              Access Exclusive Investment<br />
-              Opportunities in Nepal
+                Access Exclusive <span className="text-green-800">Investment</span><br />
+                <span className="text-green-800">Opportunities</span> in Nepal.
             </h1>
             <p className="text-base text-foreground">
               Explore top unlisted companies and build long-term wealth <br />
@@ -280,7 +277,7 @@ export default function Index() {
           </div>
 
           {/* Hero Image - Right Side */}
-          <div className="absolute w-[822px] h-auto top-0 left-[700px] -translate-y-[43px]">
+          <div className="absolute w-[750px] h-auto top-0 right-0 -translate-y-[43px]">
             <img
               src="/images/9e8992070dba3d515547d05d8848e3aa1b68be42.png"
               alt="Investment Opportunities Illustration"
@@ -305,8 +302,8 @@ export default function Index() {
             {/* Text in Middle */}
             <div className="flex flex-col gap-4 text-center w-full px-4 md:px-0">
               <h1 className="text-2xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-foreground leading-tight">
-                Access Exclusive <span className="text-green-400">Investment</span><br />
-                <span className="text-green-400">Opportunities</span> in Nepal.
+                Access Exclusive <span className="text-green-800">Investment</span><br />
+                <span className="text-green-800">Opportunities</span> in Nepal.
               </h1>
               <p className="text-sm md:text-base lg:text-lg text-foreground">
                 Explore top unlisted companies and build long-term wealth through informed decision.
@@ -347,7 +344,7 @@ export default function Index() {
             {/* Centered Buttons - Side by Side */}
             <div className="flex flex-row items-center gap-2 w-full justify-center flex-wrap">
               <Link to="/businesses" className="flex-1 min-w-fit">
-                <Button variant="hero"  className=" px-4 py-1 text-xs w-full">
+                <Button variant="hero" className=" px-4 py-1 text-xs w-full">
                   Browse Businesses
                 </Button>
               </Link>
@@ -373,36 +370,34 @@ export default function Index() {
       </section>
 
       {/* All Business Listings */}
-      <section className="py-16 md:py-24 bg-[#F4F4F4]">
+      <section className="py-8 md:py-16 lg:py-20 lg:bg-white md:bg-white sm:bg-white">
         <div className="container">
-          <div className="mb-10 flex items-end justify-between">
-            <div>
-              <h2 className="mb-2 text-3xl font-bold text-foreground md:text-4xl">
-                Investment Opportunities
-              </h2>
-              <p className="text-muted-foreground">
-                Browse all businesses actively seeking investment
-              </p>
-            </div>
+          <div className="mb-8 md:mb-12">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-3">
+              Unlock early access.
+            </h2>
+            <p className="text-sm md:text-base text-muted-foreground max-w-xl">
+              Invest in high-growth companies before they go public.
+            </p>
           </div>
 
           {/* 2 columns layout, vertically scrollable */}
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
+            <div className="flex items-center justify-center py-10 md:py-12">
               <div className="text-center">
-                <div className="inline-block h-12 w-12 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
-                <p className="mt-4 text-muted-foreground">Loading businesses...</p>
+                <div className="inline-block h-10 w-10 md:h-12 md:w-12 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
+                <p className="mt-3 md:mt-4 text-sm md:text-base text-muted-foreground">Loading businesses...</p>
               </div>
             </div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-4 sm:gap-5 lg:gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {businesses.slice(0, 6).map((business) => (
                 <div
                   key={business.id}
                   onClick={() => navigate(`/businesses/${business.id}`)}
                   className="cursor-pointer transition-transform hover:scale-[1.02]"
                 >
-                  <BusinessCard business={business} />
+                  <InvestmentCard business={business} />
                 </div>
               ))}
             </div>
@@ -411,51 +406,51 @@ export default function Index() {
       </section>
 
       {/* White Container for Stats, Sectors, FAQ, CTA */}
-      <section className="py-16 md:py-20 ">
+      <section className=" ">
         <div className="container">
-          <div className="bg-white rounded-3xl shadow-lg p-8 md:p-12 lg:p-16">
+          <div className="bg-white rounded-3xl  ">
 
             {/* Backed by Real Numbers Section */}
-            <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 items-start lg:items-center mb-16">
+            <div className="flex flex-col lg:flex-row gap-6 lg:gap-16 items-start lg:items-center mb-12 md:mb-16">
               {/* Left Side - Text */}
-              <div className="flex-1">
-                <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-4">
+              <div className="lg:flex-[2]">
+                <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-3 md:mb-4">
                   Backed by Real Numbers
                 </h2>
-                <p className="text-base text-muted-foreground leading-relaxed">
-                  AarthiQ connects investors with verified private companies across Nepal, fostering transparent partnerships that lead to smarter decisions and real economic growth. With every connection supported by reliable data and genuine opportunities, we help build confidence in Nepal's emerging investment ecosystem.
+                <p className="text-sm md:text-base text-muted-foreground leading-relaxed max-w-2xl">
+                  aarthiQ brings verified Nepali businesses and potential investors onto one transparent platform. With structured insights and authentic information, we support smarter exploration and long-term economic growth.
                 </p>
               </div>
 
               {/* Right Side - Stats */}
-              <div className="flex gap-8 lg:gap-12">
+              <div className="flex gap-6 md:gap-10 lg:gap-12 lg:flex-[1]">
                 <div className="text-center">
-                  <p className="text-2xl md:text-5xl font-bold text-foreground mb-2">
+                  <p className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-1 md:mb-2">
                     {stats.connectionsMade}+
                   </p>
-                  <p className="text-sm text-muted-foreground">Connections Made</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">Connections Made</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl md:text-5xl font-bold text-foreground mb-2">
+                  <p className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-1 md:mb-2">
                     {stats.totalCategories}
                   </p>
-                  <p className="text-sm text-muted-foreground">Investment Sectors</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">Investment Sectors</p>
                 </div>
               </div>
             </div>
 
             {/* Explore Our Sectors */}
-            <div className="mb-16">
-              <div className="mb-10 text-center">
-                <h2 className="mb-2 text-2xl font-bold text-foreground md:text-4xl">
+            <div className="mb-12 md:mb-16">
+              <div className="mb-6 md:mb-10">
+                <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-2 md:mb-3">
                   Explore Our Sectors
                 </h2>
-                <p className="text-muted-foreground text-xs">
+                <p className="text-sm md:text-base text-muted-foreground max-w-lg">
                   Find investment opportunities in your preferred sector
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 lg:gap-5">
                 {categories.map((category) => (
                   <CategoryCard
                     key={category.slug}
@@ -469,39 +464,40 @@ export default function Index() {
             </div>
 
             {/* FAQ Section */}
-            <div className="mb-16">
-              <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12">
-                {/* Left Side - Title + Contact */}
-                <div className="lg:col-span-3 flex flex-col">
-                  <h2 className="text-2xl font-bold text-foreground md:text-3xl mb-auto">
-                    Frequently Asked Questions
-                  </h2>
+            <div className="mb-12 md:mb-16">
+              {/* Title */}
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-6 md:mb-8">
+                Frequently Asked Questions
+              </h2>
 
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 lg:gap-10">
+                {/* Left Side - Contact (appears second on mobile, first on desktop) */}
+                <div className="lg:col-span-3 order-2 lg:order-1">
                   {/* Still have a question? - Contact Section */}
-                  <div className="rounded-2xl p-6 mt-8" style={{ backgroundColor: '#F2F2F2' }}>
-                    <h3 className="text-base font-bold text-foreground mb-2">
+                  <div className="rounded-2xl p-5 md:p-6" style={{ backgroundColor: '#F2F2F2' }}>
+                    <h3 className="text-sm md:text-base font-semibold text-foreground mb-2">
                       Still have a question?
                     </h3>
-                    <p className="text-xs text-muted-foreground mb-6">
-                      Feel free to reach out through any of our channels. We're here to help you explore opportunities, answer your questions, and guide you through the Aarthiq platform.
+                    <p className="text-xs md:text-sm text-muted-foreground mb-4 md:mb-6 leading-relaxed">
+                      Feel free to reach out through any of our channels. We're here to help you explore opportunities, answer your questions, and guide you through the aarthiQ platform.
                     </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
                       <div className="flex items-center gap-2">
-                        <Mail className="h-5 w-5 text-primary flex-shrink-0" />
+                        <Mail className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" />
                         <div>
                           <p className="text-xs font-medium text-foreground">Email</p>
-                          <p className="text-xs text-muted-foreground">info@aarthiq.com</p>
+                          <p className="text-xs text-muted-foreground">info@aarthiqnepal.com</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Phone className="h-5 w-5 text-primary flex-shrink-0" />
+                        <Phone className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" />
                         <div>
                           <p className="text-xs font-medium text-foreground">Phone</p>
-                          <p className="text-xs text-muted-foreground">+977-1-XXXXXXX</p>
+                          <p className="text-xs text-muted-foreground">+977 9840014401</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <MapPin className="h-5 w-5 text-primary flex-shrink-0" />
+                        <MapPin className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" />
                         <div>
                           <p className="text-xs font-medium text-foreground">Location</p>
                           <p className="text-xs text-muted-foreground">Kathmandu, Nepal</p>
@@ -511,65 +507,55 @@ export default function Index() {
                   </div>
                 </div>
 
-                {/* Right Side - FAQ Accordion */}
-                <div className="lg:col-span-2">
-                  <Accordion type="single" collapsible className="space-y-5">
+                {/* Right Side - FAQ Accordion (appears first on mobile, second on desktop) */}
+                <div className="lg:col-span-2 order-1 lg:order-2">
+                  <Accordion type="single" collapsible className="space-y-3 md:space-y-4">
                     {/* Question 1 */}
-                    <AccordionItem value="item-1" className="rounded-lg border-0 px-5  shadow-none" style={{ backgroundColor: '#F2F2F2' }}>
-                      <AccordionTrigger className="text-left text-sm font-medium text-foreground hover:text-primary hover:no-underline">
-                        What is Aarthiq?
+                    <AccordionItem value="item-1" className="rounded-lg border-0 px-4 md:px-5 shadow-none" style={{ backgroundColor: '#F2F2F2' }}>
+                      <AccordionTrigger className="text-left text-xs md:text-sm font-medium text-foreground hover:text-primary hover:no-underline py-3 md:py-4">
+                        What is aarthiQ?
                       </AccordionTrigger>
-                      <AccordionContent className="pt-3 text-xs text-muted-foreground">
-                        Aarthiq is Nepal's premier digital platform connecting investors with high-growth, pre-IPO companies.
+                      <AccordionContent className="pt-1 pb-3 md:pb-4 text-xs text-muted-foreground leading-relaxed">
+                        aarthiQ is Nepal's premier digital platform connecting investors with high-growth, pre-IPO companies.
                       </AccordionContent>
                     </AccordionItem>
 
                     {/* Question 2 */}
-                    <AccordionItem value="item-2" className="rounded-lg border-0 px-5  shadow-none" style={{ backgroundColor: '#F2F2F2' }}>
-                      <AccordionTrigger className="text-left text-sm font-medium text-foreground hover:text-primary hover:no-underline">
-                        How do I invest in businesses through Aarthiq?
+                    <AccordionItem value="item-2" className="rounded-lg border-0 px-4 md:px-5 shadow-none" style={{ backgroundColor: '#F2F2F2' }}>
+                      <AccordionTrigger className="text-left text-xs md:text-sm font-medium text-foreground hover:text-primary hover:no-underline py-3 md:py-4">
+                        How do I invest in businesses through aarthiQ?
                       </AccordionTrigger>
-                      <AccordionContent className="pt-3 text-xs text-muted-foreground">
+                      <AccordionContent className="pt-1 pb-3 md:pb-4 text-xs text-muted-foreground leading-relaxed">
                         Browse businesses, research opportunities, submit your interest, and connect directly with companies.
                       </AccordionContent>
                     </AccordionItem>
 
                     {/* Question 3 */}
-                    <AccordionItem value="item-3" className="rounded-lg border-0 px-5  shadow-none" style={{ backgroundColor: '#F2F2F2' }}>
-                      <AccordionTrigger className="text-left text-sm font-medium text-foreground hover:text-primary hover:no-underline">
-                        How can my business get listed on Aarthiq?
+                    <AccordionItem value="item-3" className="rounded-lg border-0 px-4 md:px-5 shadow-none" style={{ backgroundColor: '#F2F2F2' }}>
+                      <AccordionTrigger className="text-left text-xs md:text-sm font-medium text-foreground hover:text-primary hover:no-underline py-3 md:py-4">
+                        How can my business get listed on aarthiQ?
                       </AccordionTrigger>
-                      <AccordionContent className="pt-3 text-xs text-muted-foreground">
+                      <AccordionContent className="pt-1 pb-3 md:pb-4 text-xs text-muted-foreground leading-relaxed">
                         Click "List Your Business" and our team will guide you through the registration process.
                       </AccordionContent>
                     </AccordionItem>
 
                     {/* Question 4 */}
-                    <AccordionItem value="item-4" className="rounded-lg border-0 px-5  shadow-none" style={{ backgroundColor: '#F2F2F2' }}>
-                      <AccordionTrigger className="text-left text-sm font-medium text-foreground hover:text-primary hover:no-underline">
+                    <AccordionItem value="item-4" className="rounded-lg border-0 px-4 md:px-5 shadow-none" style={{ backgroundColor: '#F2F2F2' }}>
+                      <AccordionTrigger className="text-left text-xs md:text-sm font-medium text-foreground hover:text-primary hover:no-underline py-3 md:py-4">
                         Is my investment safe? What are the risks?
                       </AccordionTrigger>
-                      <AccordionContent className="pt-3 text-xs text-muted-foreground">
+                      <AccordionContent className="pt-1 pb-3 md:pb-4 text-xs text-muted-foreground leading-relaxed">
                         All investments carry risks. We verify businesses but recommend conducting your own due diligence.
                       </AccordionContent>
                     </AccordionItem>
 
                     {/* Question 5 */}
-                    <AccordionItem value="item-5" className="rounded-lg border-0 px-5  shadow-none" style={{ backgroundColor: '#F2F2F2' }}>
-                      <AccordionTrigger className="text-left text-sm font-medium text-foreground hover:text-primary hover:no-underline">
-                        How do I invest in businesses through Aarthiq?
-                      </AccordionTrigger>
-                      <AccordionContent className="pt-3 text-xs text-muted-foreground">
-                        Browse businesses, research opportunities, submit your interest, and connect directly with companies.
-                      </AccordionContent>
-                    </AccordionItem>
-
-                    {/* Question 6 */}
-                    <AccordionItem value="item-6" className="rounded-lg border-0 px-5  shadow-none" style={{ backgroundColor: '#F2F2F2' }}>
-                      <AccordionTrigger className="text-left text-sm font-medium text-foreground hover:text-primary hover:no-underline">
+                    <AccordionItem value="item-5" className="rounded-lg border-0 px-4 md:px-5 shadow-none" style={{ backgroundColor: '#F2F2F2' }}>
+                      <AccordionTrigger className="text-left text-xs md:text-sm font-medium text-foreground hover:text-primary hover:no-underline py-3 md:py-4">
                         How do I manage my business profile after approval?
                       </AccordionTrigger>
-                      <AccordionContent className="pt-3 text-xs text-muted-foreground">
+                      <AccordionContent className="pt-1 pb-3 md:pb-4 text-xs text-muted-foreground leading-relaxed">
                         Login to your dashboard to edit information, view inquiries, and manage your investment opportunities.
                       </AccordionContent>
                     </AccordionItem>
@@ -579,30 +565,29 @@ export default function Index() {
             </div>
 
             {/* CTA Section with Mobile Image */}
-            <div className="relative overflow-visible rounded-2xl bg-gradient-hero py-12 px-8 md:py-16 md:px-12 lg:py-20 lg:px-16">
+            <div className="relative overflow-visible rounded-2xl bg-gradient-hero py-8 px-5 md:py-12 md:px-10 lg:py-16 lg:px-14">
               {/* Mobile Phone Image - Positioned at top right, extending above container */}
-              <div className="absolute -top-12 right-8 md:right-12 lg:right-16 hidden lg:block z-20">
+              <div className="absolute -top-12 right-6 md:right-10 lg:right-14 hidden lg:block z-20">
                 <img
                   src="/images/14c299561939aba34d0f808da4a88bf13dd4680f.png"
                   alt="Investment Growth"
-                  className="h-96 w-auto object-contain"
+                  className="h-80 lg:h-96 w-auto object-contain"
                 />
               </div>
 
               {/* Left Side - Text Content */}
-              <div className="relative z-10 max-w-2xl mx-4">
-                <h2 className="mb-4 text-3xl font-bold text-primary-foreground md:text-4xl">
+              <div className="relative z-10 max-w-2xl">
+                <h2 className="text-xl md:text-2xl lg:text-4xl font-bold text-primary-foreground mb-2 md:mb-3 lg:mb-4">
                   Ready to Find Your Next Investment?
                 </h2>
-                <p className="mb-8 text-primary-foreground/90 text-sm md:text-base">
+                <p className="text-xs md:text-sm lg:text-base text-primary-foreground/90 mb-4 md:mb-6 lg:mb-8 max-w-xl leading-relaxed">
                   Join hundreds of investors discovering opportunities in Nepal's growing economy. Start exploring today.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex flex-row gap-2 md:gap-3">
                   <Link to="/businesses">
                     <Button
                       variant="secondary"
-                      size="lg"
-                      className="bg-white text-foreground hover:bg-white/90 font-semibold"
+                      className="bg-white text-foreground hover:bg-white/90 font-medium text-xs px-3 py-1.5 h-8 md:text-sm md:px-5 md:h-10 lg:text-base lg:px-6 lg:h-11"
                     >
                       Browse Businesses
                     </Button>
@@ -610,8 +595,7 @@ export default function Index() {
                   <Button
                     onClick={() => setIsModalOpen(true)}
                     variant="outline"
-                    size="lg"
-                    className="border-white border-2 bg-transparent text-white hover:bg-white/10 font-semibold"
+                    className="border-white border bg-transparent text-white hover:bg-white/10 font-medium text-xs px-3 py-1.5 h-8 md:text-sm md:px-5 md:h-10 md:border-2 lg:text-base lg:px-6 lg:h-11"
                   >
                     List Your Business
                   </Button>

@@ -10,7 +10,7 @@ interface CategoryCardProps {
 export function CategoryCard({
   name,
   icon: Icon,
-  count,
+  // count,
   href,
 }: CategoryCardProps) {
   return (
@@ -24,7 +24,7 @@ export function CategoryCard({
       <h3 className="mb-1 font-semibold text-foreground transition-colors group-hover:text-primary">
         {name}
       </h3>
-      <p className="text-sm text-muted-foreground">{count} businesses</p>
+      {/* <p className="text-sm text-muted-foreground">{count} businesses</p> */}
     </Link>
   );
 }

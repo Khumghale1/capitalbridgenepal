@@ -2,30 +2,21 @@ import { useParams, Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { BusinessCard } from "@/components/business/BusinessCard";
-import { extractYouTubeVideoId, getYouTubeEmbedUrl } from "@/utils/youtube";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  MapPin,
-  Globe,
-  Mail,
-  Phone,
-  Share2,
-  Bookmark,
-  FileText,
-  Video,
-  Image,
   Building2,
-  ShieldCheck,
+  BarChart3,
+  CircleDollarSign,
+  RefreshCcw,
+  TrendingUp,
+  Users,
+  Eye,
+  FileText,
+  FolderOpen,
+  Play,
+  ChevronRight,
   Lock,
   ArrowLeft,
-  Info,
+  Globe,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -45,12 +36,8 @@ interface Business {
   fullDescription?: string;
   investmentCapacityMin: number;
   investmentCapacityMax: number;
-  minimumInvestmentUnits?: number;
-  maximumInvestmentUnits?: number;
   pricePerUnit?: number;
   expectedReturnOptions?: string;
-  estimatedMarketValuation?: number;
-  ipoTimeHorizon?: string;
   paidUpCapital: number;
   yearEstablished: number;
   businessType: string;
@@ -67,7 +54,7 @@ interface Business {
 interface BusinessMedia {
   id: string;
   businessId: string;
-  mediaType: 'PITCH_DECK' | 'VIDEO' | 'BROCHURE' | 'GALLERY' | 'COMPANY_LOGO' | 'YOUTUBE_VIDEO' | 'WEBSITE';
+  mediaType: 'PITCH_DECK' | 'VIDEO' | 'BROCHURE' | 'GALLERY' | 'COMPANY_LOGO' | 'YOUTUBE_VIDEO' | 'WEBSITE' | 'DOCUMENT';
   fileName: string;
   fileUrl: string;
   externalUrl?: string;
@@ -82,32 +69,29 @@ function formatCurrency(amount: number): string {
   if (amount >= 10000000) {
     return `${(amount / 10000000).toFixed(1)} Crore`;
   } else if (amount >= 100000) {
-    return `${(amount / 100000).toFixed(1)} Lakhs`;
+    return `${(amount / 100000).toFixed(0)} Lakh`;
+  } else if (amount >= 1000) {
+    return `${(amount / 1000).toFixed(0)}K`;
   }
-  return `${(amount / 1000).toFixed(0)}K`;
+  return amount.toString();
 }
 
-function formatPricePerUnit(amount: number): string {
-  return amount.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 0 });
+function formatInvestmentRange(min: number, max: number): string {
+  return `NPR ${formatCurrency(min)} - ${formatCurrency(max)}`;
 }
 
 export default function BusinessDetail() {
   const { id } = useParams();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("pitch-deck");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [business, setBusiness] = useState<Business | null>(null);
-  const [relatedBusinesses, setRelatedBusinesses] = useState<Business[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [openModal, setOpenModal] = useState<string | null>(null);
   const [media, setMedia] = useState<BusinessMedia[]>([]);
-  const [mediaLoading, setMediaLoading] = useState(false);
   const [interestFormData, setInterestFormData] = useState({
     investorName: "",
     email: "",
     phoneNumber: "",
     message: "",
-    hasConsent: false,
   });
 
   useEffect(() => {
@@ -125,21 +109,6 @@ export default function BusinessDetail() {
       const businessData = response.business;
       setBusiness(businessData);
 
-      // Fetch all businesses to find related ones
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const allBusinessesResponse: any = await api.businesses.getAll();
-      const allBusinesses = allBusinessesResponse.businesses || [];
-
-      // Filter related businesses
-      const related = allBusinesses
-        .filter((b: Business) =>
-          b.category.name === businessData.category.name &&
-          b.id !== businessData.id
-        )
-        .slice(0, 3);
-
-      setRelatedBusinesses(related);
-
       // Fetch media for this business
       await fetchBusinessMedia(id!);
     } catch (error) {
@@ -156,7 +125,6 @@ export default function BusinessDetail() {
 
   const fetchBusinessMedia = async (businessId: string) => {
     try {
-      setMediaLoading(true);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const response: any = await api.upload.getMedia(businessId);
       const mediaData = response.media || response || [];
@@ -164,8 +132,6 @@ export default function BusinessDetail() {
     } catch (error) {
       console.error("Failed to fetch business media:", error);
       setMedia([]);
-    } finally {
-      setMediaLoading(false);
     }
   };
 
@@ -189,7 +155,7 @@ export default function BusinessDetail() {
           <h1 className="mb-4 text-2xl font-bold">Business Not Found</h1>
           <Link to="/businesses">
             <Button variant="outline">
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Businesses
             </Button>
           </Link>
@@ -207,14 +173,13 @@ export default function BusinessDetail() {
         businessId: id!,
         investorName: interestFormData.investorName,
         phoneNumber: interestFormData.phoneNumber,
-        email: interestFormData.email,
+        email: interestFormData.email || undefined,
         message: interestFormData.message || undefined,
-        hasConsent: interestFormData.hasConsent,
       });
 
       toast({
         title: "Interest Submitted!",
-        description: `Thank you! ${business.name} will be notified of your interest.`,
+        description: `Your interest has been successfully submitted. A representative from ${business.name} will contact you within two business days.`,
       });
 
       // Reset form
@@ -223,7 +188,6 @@ export default function BusinessDetail() {
         email: "",
         phoneNumber: "",
         message: "",
-        hasConsent: false,
       });
     } catch (error) {
       toast({
@@ -236,900 +200,309 @@ export default function BusinessDetail() {
     }
   };
 
-  const tabs = [
-    { id: "pitch-deck", label: "Pitch Deck", icon: FileText },
-    { id: "videos", label: "Videos", icon: Video },
-    { id: "brochures", label: "Brochures", icon: FileText },
-    { id: "gallery", label: "Gallery", icon: Image },
-  ];
+  // Get stage label from status
+  const getStageLabel = (status?: string) => {
+    if (status === 'APPROVED') return 'Operational';
+    if (status === 'PENDING') return 'Pending';
+    return 'Operational';
+  };
+
+  // Get media by type
+  const pitchDeck = media.find(m => m.mediaType === 'PITCH_DECK');
+  const applicationForm = media.find(m => m.mediaType === 'DOCUMENT');
+  const video = media.find(m => m.mediaType === 'VIDEO' || m.mediaType === 'YOUTUBE_VIDEO');
 
   return (
     <Layout>
-      {/* Breadcrumb */}
-      <section className="border-b border-border bg-secondary/30 py-4">
-        <div className="container">
-          <nav className="flex items-center gap-2 text-sm">
-            <Link to="/" className="text-muted-foreground hover:text-primary">
-              Home
-            </Link>
-            <span className="text-muted-foreground">/</span>
-            <Link
-              to="/businesses"
-              className="text-muted-foreground hover:text-primary"
-            >
-              Browse Businesses
-            </Link>
-            <span className="text-muted-foreground">/</span>
-            <span className="text-foreground">{business.name}</span>
-          </nav>
-        </div>
-      </section>
+      <div className="bg-[#F4F4F4] min-h-screen">
+        <div className="container py-8 md:py-12">
 
-      <section className="py-8">
-        <div className="container">
-          <div className="flex flex-col gap-8 lg:flex-row">
-            {/* Main Content */}
-            <div className="flex-1">
-              {/* Business Header */}
-              <div className="mb-8 rounded-xl border border-border bg-card p-6 md:p-8">
-                <div className="flex flex-col gap-6 md:flex-row md:items-start">
-                  <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-secondary md:h-24 md:w-24 overflow-hidden">
-                    {business.logoUrl ? (
-                      <img
-                        src={business.logoUrl}
-                        alt={business.name}
-                        className="h-16 w-16 md:h-20 md:w-20 rounded-lg object-contain"
-                      />
-                    ) : (
-                      <Building2 className="h-10 w-10 text-muted-foreground md:h-12 md:w-12" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div className="mb-3 flex flex-wrap items-center gap-2">
-                      <h1 className="text-2xl font-bold text-foreground md:text-3xl">
-                        {business.name}
-                      </h1>
-                      {business.status === 'APPROVED' && (
-                        <Badge
-                          variant="secondary"
-                          className="gap-1 bg-success/10 text-success"
-                        >
-                          <ShieldCheck className="h-3 w-3" />
-                          Verified
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="mb-4 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <MapPin className="h-4 w-4" />
-                        {business.location}
-                      </span>
-                      <Badge
-                        variant="secondary"
-                        className="bg-teal-50 text-teal-700"
-                      >
-                        {business.category.name}
-                      </Badge>
-                    </div>
-                    <p className="text-muted-foreground">{business.briefDescription}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="icon">
-                      <Share2 className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon">
-                      <Bookmark className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Key Metrics */}
-                <div className="mt-6 grid grid-cols-2 gap-4 rounded-lg bg-teal-50 p-4 md:grid-cols-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Investment Sought
-                    </p>
-                    <p className="font-bold text-foreground">
-                      NPR {formatCurrency(business.investmentCapacityMin)} -{" "}
-                      {formatCurrency(business.investmentCapacityMax)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Paid-Up Capital
-                    </p>
-                    <p className="font-bold text-foreground">
-                      NPR {formatCurrency(business.paidUpCapital)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Established</p>
-                    <p className="font-bold text-foreground">{business.yearEstablished}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Team Size</p>
-                    <p className="font-bold text-foreground">{business.teamSize}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* About Section */}
-              <div className="mb-8 rounded-xl border border-border bg-card p-6 md:p-8">
-                <h2 className="mb-4 text-xl font-bold text-foreground">
-                  About the Business
-                </h2>
-                <div className="prose prose-gray max-w-none text-muted-foreground">
-                  <p>{business.briefDescription}</p>
-                  {business.fullDescription && (
-                    <p className="mt-4 whitespace-pre-wrap">{business.fullDescription}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Key Investment Parameters */}
-              {(business.minimumInvestmentUnits || business.maximumInvestmentUnits || business.pricePerUnit || business.expectedReturnOptions || business.estimatedMarketValuation || business.ipoTimeHorizon) && (
-                <div className="mb-8 rounded-xl border border-border bg-card p-6 md:p-8">
-                  <h2 className="mb-4 text-xl font-bold text-foreground">
-                    Key Investment Parameters
-                  </h2>
-                  <p className="mb-4 text-sm text-muted-foreground">
-                    Click on any parameter to view detailed information
-                  </p>
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {business.minimumInvestmentUnits && (
-                      <div
-                        onClick={() => setOpenModal('minUnits')}
-                        className="rounded-lg border border-primary/20 bg-primary/5 p-4 transition-all hover:border-primary/40 hover:shadow-md cursor-pointer group"
-                      >
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-muted-foreground">Minimum Investment Units</p>
-                          <Info className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
-                        <p className="mt-1 text-2xl font-bold text-primary">{business.minimumInvestmentUnits.toLocaleString()}</p>
-                      </div>
-                    )}
-                    {business.maximumInvestmentUnits && (
-                      <div
-                        onClick={() => setOpenModal('maxUnits')}
-                        className="rounded-lg border border-primary/20 bg-primary/5 p-4 transition-all hover:border-primary/40 hover:shadow-md cursor-pointer group"
-                      >
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-muted-foreground">Maximum Investment Units</p>
-                          <Info className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
-                        <p className="mt-1 text-2xl font-bold text-primary">{business.maximumInvestmentUnits.toLocaleString()}</p>
-                      </div>
-                    )}
-                    {business.pricePerUnit && (
-                      <div
-                        onClick={() => setOpenModal('pricePerUnit')}
-                        className="rounded-lg border border-primary/20 bg-primary/5 p-4 transition-all hover:border-primary/40 hover:shadow-md cursor-pointer group"
-                      >
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-muted-foreground">Price per Unit</p>
-                          <Info className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
-                        <p className="mt-1 text-2xl font-bold text-primary">NPR {formatPricePerUnit(business.pricePerUnit)}</p>
-                      </div>
-                    )}
-                    {business.expectedReturnOptions && (
-                      <div
-                        onClick={() => setOpenModal('expectedReturns')}
-                        className="rounded-lg border border-primary/20 bg-primary/5 p-4 transition-all hover:border-primary/40 hover:shadow-md cursor-pointer group"
-                      >
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-muted-foreground">Expected Return Options</p>
-                          <Info className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
-                        <p className="mt-1 text-base font-semibold text-primary">{business.expectedReturnOptions}</p>
-                      </div>
-                    )}
-                    {business.estimatedMarketValuation && (
-                      <div
-                        onClick={() => setOpenModal('valuation')}
-                        className="rounded-lg border border-primary/20 bg-primary/5 p-4 transition-all hover:border-primary/40 hover:shadow-md cursor-pointer group"
-                      >
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-muted-foreground">Estimated Market Valuation</p>
-                          <Info className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
-                        <p className="mt-1 text-2xl font-bold text-primary">NPR {formatCurrency(business.estimatedMarketValuation)}</p>
-                        <p className="mt-2 text-xs text-muted-foreground italic">*Based on information provided by the business</p>
-                      </div>
-                    )}
-                    {business.ipoTimeHorizon && (
-                      <div
-                        onClick={() => setOpenModal('ipoTimeline')}
-                        className="rounded-lg border border-primary/20 bg-primary/5 p-4 transition-all hover:border-primary/40 hover:shadow-md cursor-pointer group"
-                      >
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-muted-foreground">Time Horizon for IPO</p>
-                          <Info className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
-                        <p className="mt-1 text-base font-semibold text-primary">{business.ipoTimeHorizon}</p>
-                      </div>
-                    )}
-                    {business.teamSize && (
-                      <div
-                        onClick={() => setOpenModal('teamSize')}
-                        className="rounded-lg border border-primary/20 bg-primary/5 p-4 transition-all hover:border-primary/40 hover:shadow-md cursor-pointer group"
-                      >
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-muted-foreground">Team Size</p>
-                          <Info className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
-                        <p className="mt-1 text-base font-semibold text-primary">{business.teamSize}</p>
-                      </div>
-                    )}
-                  </div>
-                  <p className="mt-4 text-xs text-muted-foreground">
-                    <ShieldCheck className="inline h-3 w-3 mr-1" />
-                    Estimated valuation is based on information provided by the business. The platform does not influence investment decisions.
-                  </p>
-                </div>
-              )}
-
-              {/* Investment Parameter Modals */}
-              <Dialog open={openModal === 'minUnits'} onOpenChange={() => setOpenModal(null)}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Minimum Investment Units</DialogTitle>
-                    <DialogDescription>
-                      Understanding the minimum investment requirement
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="rounded-lg bg-primary/5 p-4 border border-primary/20">
-                      <p className="text-3xl font-bold text-primary">{business?.minimumInvestmentUnits?.toLocaleString()} units</p>
-                    </div>
-                    <div className="space-y-2">
-                      <h4 className="font-semibold">What does this mean?</h4>
-                      <p className="text-sm text-muted-foreground">
-                        This is the smallest number of investment units you can purchase from this business.
-                        Each unit represents a share of ownership in the company.
-                      </p>
-                    </div>
-                    {business?.pricePerUnit && (
-                      <div className="space-y-2">
-                        <h4 className="font-semibold">Minimum Investment Amount</h4>
-                        <p className="text-sm text-muted-foreground">
-                          At NPR {formatPricePerUnit(business.pricePerUnit)} per unit, your minimum investment would be:
-                        </p>
-                        <p className="text-2xl font-bold text-primary">
-                          NPR {formatCurrency((business.minimumInvestmentUnits || 0) * business.pricePerUnit)}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              <Dialog open={openModal === 'maxUnits'} onOpenChange={() => setOpenModal(null)}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Maximum Investment Units</DialogTitle>
-                    <DialogDescription>
-                      Understanding the maximum investment limit
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="rounded-lg bg-primary/5 p-4 border border-primary/20">
-                      <p className="text-3xl font-bold text-primary">{business?.maximumInvestmentUnits?.toLocaleString()} units</p>
-                    </div>
-                    <div className="space-y-2">
-                      <h4 className="font-semibold">What does this mean?</h4>
-                      <p className="text-sm text-muted-foreground">
-                        This is the maximum number of investment units a single investor can purchase from this business.
-                        This limit helps ensure diverse ownership and prevents concentration of control.
-                      </p>
-                    </div>
-                    {business?.pricePerUnit && (
-                      <div className="space-y-2">
-                        <h4 className="font-semibold">Maximum Investment Amount</h4>
-                        <p className="text-sm text-muted-foreground">
-                          At NPR {formatPricePerUnit(business.pricePerUnit)} per unit, your maximum investment would be:
-                        </p>
-                        <p className="text-2xl font-bold text-primary">
-                          NPR {formatCurrency((business.maximumInvestmentUnits || 0) * business.pricePerUnit)}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              <Dialog open={openModal === 'pricePerUnit'} onOpenChange={() => setOpenModal(null)}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Price per Unit</DialogTitle>
-                    <DialogDescription>
-                      The cost of each investment unit
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="rounded-lg bg-primary/5 p-4 border border-primary/20">
-                      <p className="text-3xl font-bold text-primary">NPR {business?.pricePerUnit ? formatPricePerUnit(business.pricePerUnit) : 'N/A'}</p>
-                      <p className="text-sm text-muted-foreground mt-1">per unit</p>
-                    </div>
-                    <div className="space-y-2">
-                      <h4 className="font-semibold">What does this mean?</h4>
-                      <p className="text-sm text-muted-foreground">
-                        This is the price you pay for each investment unit. Multiply this by the number of units you want to purchase to calculate your total investment amount.
-                      </p>
-                    </div>
-                    {business?.minimumInvestmentUnits && business?.maximumInvestmentUnits && (
-                      <div className="space-y-2">
-                        <h4 className="font-semibold">Investment Range</h4>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="rounded-lg bg-secondary/50 p-3">
-                            <p className="text-xs text-muted-foreground">Minimum</p>
-                            <p className="text-lg font-bold text-foreground">
-                              NPR {formatCurrency(business.minimumInvestmentUnits * (business.pricePerUnit || 0))}
-                            </p>
-                          </div>
-                          <div className="rounded-lg bg-secondary/50 p-3">
-                            <p className="text-xs text-muted-foreground">Maximum</p>
-                            <p className="text-lg font-bold text-foreground">
-                              NPR {formatCurrency(business.maximumInvestmentUnits * (business.pricePerUnit || 0))}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              <Dialog open={openModal === 'expectedReturns'} onOpenChange={() => setOpenModal(null)}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Expected Return Options</DialogTitle>
-                    <DialogDescription>
-                      Projected returns on your investment
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="rounded-lg bg-primary/5 p-4 border border-primary/20">
-                      <p className="text-2xl font-bold text-primary">{business?.expectedReturnOptions}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <h4 className="font-semibold">What does this mean?</h4>
-                      <p className="text-sm text-muted-foreground">
-                        This represents the anticipated financial return on your investment. Returns may come in the form of:
-                      </p>
-                      <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 ml-2">
-                        <li>Dividends (regular profit sharing)</li>
-                        <li>Capital appreciation (increase in share value)</li>
-                        <li>IPO exit (selling shares during public offering)</li>
-                        <li>Buyback opportunities</li>
-                      </ul>
-                    </div>
-                    <div className="rounded-lg bg-yellow-50 border border-yellow-200 p-4">
-                      <p className="text-xs text-yellow-800">
-                        <ShieldCheck className="inline h-3 w-3 mr-1" />
-                        <strong>Disclaimer:</strong> Expected returns are projections and not guarantees. Actual returns may vary based on business performance and market conditions.
-                      </p>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              <Dialog open={openModal === 'valuation'} onOpenChange={() => setOpenModal(null)}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Estimated Market Valuation</DialogTitle>
-                    <DialogDescription>
-                      Current estimated worth of the business
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="rounded-lg bg-primary/5 p-4 border border-primary/20">
-                      <p className="text-3xl font-bold text-primary">
-                        NPR {business?.estimatedMarketValuation ? formatCurrency(business.estimatedMarketValuation) : 'N/A'}
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <h4 className="font-semibold">What does this mean?</h4>
-                      <p className="text-sm text-muted-foreground">
-                        This is the estimated total market value of the business based on various factors including:
-                      </p>
-                      <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 ml-2">
-                        <li>Current revenue and profitability</li>
-                        <li>Growth potential and market size</li>
-                        <li>Assets and intellectual property</li>
-                        <li>Industry benchmarks and comparables</li>
-                        <li>Future projections</li>
-                      </ul>
-                    </div>
-                    <div className="rounded-lg bg-yellow-50 border border-yellow-200 p-4">
-                      <p className="text-xs text-yellow-800">
-                        <ShieldCheck className="inline h-3 w-3 mr-1" />
-                        <strong>Important:</strong> This valuation is based on information provided by the business.
-                        The platform does not influence investment decisions. We recommend conducting your own due diligence
-                        and consulting with financial advisors before investing.
-                      </p>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              <Dialog open={openModal === 'ipoTimeline'} onOpenChange={() => setOpenModal(null)}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Time Horizon for IPO</DialogTitle>
-                    <DialogDescription>
-                      Expected timeline for public listing
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="rounded-lg bg-primary/5 p-4 border border-primary/20">
-                      <p className="text-2xl font-bold text-primary">{business?.ipoTimeHorizon}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <h4 className="font-semibold">What does this mean?</h4>
-                      <p className="text-sm text-muted-foreground">
-                        This is the estimated timeframe for the company to go public (Initial Public Offering).
-                        An IPO is when a private company offers its shares to the public for the first time on a stock exchange.
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <h4 className="font-semibold">Why is this important?</h4>
-                      <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 ml-2">
-                        <li>IPO provides liquidity - you can sell your shares on the open market</li>
-                        <li>Potentially realize capital gains from share price appreciation</li>
-                        <li>Increased transparency through public reporting requirements</li>
-                        <li>Greater visibility and credibility for the company</li>
-                      </ul>
-                    </div>
-                    <div className="rounded-lg bg-yellow-50 border border-yellow-200 p-4">
-                      <p className="text-xs text-yellow-800">
-                        <ShieldCheck className="inline h-3 w-3 mr-1" />
-                        <strong>Note:</strong> IPO timelines are estimates and subject to change based on market conditions,
-                        regulatory requirements, and company performance. There is no guarantee an IPO will occur.
-                      </p>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              <Dialog open={openModal === 'teamSize'} onOpenChange={() => setOpenModal(null)}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Team Size</DialogTitle>
-                    <DialogDescription>
-                      Understanding the company's workforce
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="rounded-lg bg-primary/5 p-4 border border-primary/20">
-                      <p className="text-3xl font-bold text-primary">{business?.teamSize}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <h4 className="font-semibold">What does this mean?</h4>
-                      <p className="text-sm text-muted-foreground">
-                        This represents the current size of the company's team/workforce. Team size can be an indicator
-                        of the company's operational scale and growth stage.
-                      </p>
-                    </div>
-                    <div className="space-y-2">
-                      <h4 className="font-semibold">Why is this important?</h4>
-                      <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 ml-2">
-                        <li>Indicates the company's operational capacity and maturity</li>
-                        <li>Helps assess scalability and growth potential</li>
-                        <li>Provides context for revenue and valuation metrics</li>
-                        <li>Shows the company's investment in human capital</li>
-                      </ul>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              {/* Investment Opportunity */}
-              <div className="mb-8 rounded-xl border border-border bg-card p-6 md:p-8">
-                <h2 className="mb-4 text-xl font-bold text-foreground">
-                  Investment Opportunity
-                </h2>
-                <div className="space-y-4 text-muted-foreground">
-                  <div>
-                    <h3 className="mb-2 font-semibold text-foreground">
-                      Why Invest?
-                    </h3>
-                    <ul className="ml-5 list-disc space-y-1">
-                      <li>Growing market with increasing demand</li>
-                      <li>Experienced management team</li>
-                      <li>Strong revenue growth trajectory</li>
-                      <li>Clear path to profitability</li>
-                    </ul>
-                  </div>
-                  {business.growthPlans && (
-                    <div>
-                      <h3 className="mb-2 font-semibold text-foreground">
-                        Use of Funds / Growth Plans
-                      </h3>
-                      <p className="whitespace-pre-wrap">{business.growthPlans}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Media Gallery */}
-              <div className="mb-8 rounded-xl border border-border bg-card p-6 md:p-8">
-                <h2 className="mb-4 text-xl font-bold text-foreground">
-                  Materials & Media
-                </h2>
-                <div className="mb-4 flex gap-2 overflow-x-auto">
-                  {tabs.map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                        activeTab === tab.id
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary text-foreground hover:bg-secondary/80"
-                      }`}
-                    >
-                      <tab.icon className="h-4 w-4" />
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-
-                {mediaLoading ? (
-                  <div className="rounded-lg border border-border bg-secondary/30 p-8 text-center">
-                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
-                    <p className="mt-2 text-sm text-muted-foreground">Loading media...</p>
-                  </div>
-                ) : null}
-
-                {!mediaLoading && activeTab === "pitch-deck" && (
-                  <div>
-                    {media.filter(m => m.mediaType === 'PITCH_DECK').length > 0 ? (
-                      <div className="space-y-3">
-                        {media.filter(m => m.mediaType === 'PITCH_DECK').map((item) => (
-                          <div key={item.id} className="flex items-center justify-between rounded-lg border border-border p-4 hover:bg-secondary/30 transition-colors">
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                              <FileText className="h-8 w-8 text-primary flex-shrink-0" />
-                              <div className="min-w-0">
-                                <p className="font-medium text-foreground truncate">{item.title || item.fileName}</p>
-                                <p className="text-xs text-muted-foreground">{(parseInt(item.fileSize) / 1024 / 1024).toFixed(2)} MB</p>
-                              </div>
-                            </div>
-                            <a
-                              href={item.fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="ml-2 inline-flex items-center justify-center h-10 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex-shrink-0"
-                            >
-                              View
-                            </a>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="rounded-lg border border-border bg-secondary/30 p-8 text-center">
-                        <FileText className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                        <p className="mb-2 font-medium text-foreground">No Pitch Deck Available</p>
-                        <p className="text-sm text-muted-foreground">The business hasn't uploaded a pitch deck yet</p>
-                      </div>
-                    )}
+          {/* Header Section - Centered Logo, Name, Badges */}
+          <div className="text-center mb-8">
+            {/* Logo */}
+            <div className="flex justify-center mb-6">
+              <div className="h-40 w-40 flex items-center justify-center">
+                {business.logoUrl ? (
+                  <img
+                    src={business.logoUrl}
+                    alt={business.name}
+                    className="max-h-40 max-w-40 object-contain"
+                  />
+                ) : (
+                  <div className="h-40 w-40 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                    <Building2 className="h-20 w-20 text-muted-foreground" />
                   </div>
                 )}
-
-                {!mediaLoading && activeTab === "videos" && (
-                  <div>
-                    {media.filter(m => m.mediaType === 'VIDEO' || m.mediaType === 'YOUTUBE_VIDEO').length > 0 ? (
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        {media.filter(m => m.mediaType === 'VIDEO' || m.mediaType === 'YOUTUBE_VIDEO').map((item) => {
-                          const videoId = extractYouTubeVideoId(item.fileUrl || item.externalUrl || '');
-                          const embedUrl = videoId ? getYouTubeEmbedUrl(videoId) : null;
-
-                          return (
-                            <div key={item.id} className="rounded-lg overflow-hidden border border-border hover:border-primary transition-colors">
-                              {embedUrl ? (
-                                <iframe
-                                  width="100%"
-                                  height="200"
-                                  src={embedUrl}
-                                  title={item.title || item.fileName}
-                                  frameBorder="0"
-                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                  allowFullScreen
-                                  className="w-full aspect-video"
-                                />
-                              ) : (
-                                <div className="aspect-video bg-secondary flex items-center justify-center">
-                                  <Video className="h-12 w-12 text-muted-foreground" />
-                                </div>
-                              )}
-                              <div className="p-3">
-                                <p className="font-medium text-foreground text-sm truncate">{item.title || item.fileName}</p>
-                                {!embedUrl && (
-                                  <a
-                                    href={item.fileUrl || item.externalUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="mt-2 inline-flex items-center text-xs text-primary hover:underline"
-                                  >
-                                    Watch Video →
-                                  </a>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="rounded-lg border border-border bg-secondary/30 p-8 text-center">
-                        <Video className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                        <p className="mb-2 font-medium text-foreground">No Videos Available</p>
-                        <p className="text-sm text-muted-foreground">The business hasn't uploaded any videos yet</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {!mediaLoading && activeTab === "brochures" && (
-                  <div>
-                    {media.filter(m => m.mediaType === 'BROCHURE').length > 0 ? (
-                      <div className="space-y-3">
-                        {media.filter(m => m.mediaType === 'BROCHURE').map((item) => (
-                          <div key={item.id} className="flex items-center justify-between rounded-lg border border-border p-4 hover:bg-secondary/30 transition-colors">
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                              <FileText className="h-8 w-8 text-blue-500 flex-shrink-0" />
-                              <div className="min-w-0">
-                                <p className="font-medium text-foreground truncate">{item.title || item.fileName}</p>
-                                <p className="text-xs text-muted-foreground">{(parseInt(item.fileSize) / 1024 / 1024).toFixed(2)} MB</p>
-                              </div>
-                            </div>
-                            <a
-                              href={item.fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="ml-2 inline-flex items-center justify-center h-10 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors flex-shrink-0"
-                            >
-                              View
-                            </a>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="rounded-lg border border-border bg-secondary/30 p-8 text-center">
-                        <FileText className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                        <p className="mb-2 font-medium text-foreground">No Brochures Available</p>
-                        <p className="text-sm text-muted-foreground">The business hasn't uploaded any brochures yet</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {!mediaLoading && activeTab === "gallery" && (
-                  <div>
-                    {media.filter(m => m.mediaType === 'GALLERY').length > 0 ? (
-                      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-                        {media.filter(m => m.mediaType === 'GALLERY').map((item) => (
-                          <a
-                            key={item.id}
-                            href={item.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="group relative overflow-hidden rounded-lg border border-border hover:border-primary transition-colors"
-                          >
-                            <img
-                              src={item.fileUrl}
-                              alt={item.title || item.fileName}
-                              className="aspect-square object-cover group-hover:scale-105 transition-transform"
-                            />
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                              <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-sm font-medium">View</span>
-                            </div>
-                          </a>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="rounded-lg border border-border bg-secondary/30 p-8 text-center">
-                        <Image className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                        <p className="mb-2 font-medium text-foreground">No Gallery Images Available</p>
-                        <p className="text-sm text-muted-foreground">The business hasn't uploaded any gallery images yet</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Contact Info */}
-              <div className="mb-8 rounded-xl border border-border bg-card p-6 md:p-8">
-                <h2 className="mb-4 text-xl font-bold text-foreground">
-                  Contact Information
-                </h2>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
-                      <Mail className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Email</p>
-                      <p className="font-medium text-foreground">
-                        {business.contactEmail}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
-                      <Phone className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Phone</p>
-                      <p className="font-medium text-foreground">
-                        {business.contactPhone}
-                      </p>
-                    </div>
-                  </div>
-                  {business.website && (
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
-                        <Globe className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Website</p>
-                        <a href={business.website} target="_blank" rel="noopener noreferrer" className="font-medium text-primary hover:underline">
-                          {business.website}
-                        </a>
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary">
-                      <MapPin className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Location</p>
-                      <p className="font-medium text-foreground">
-                        {business.location}, Nepal
-                      </p>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
 
-            {/* Sidebar */}
-            <aside className="w-full shrink-0 lg:w-80 xl:w-96">
-              <div className="sticky top-24 space-y-6">
-                {/* Interest Form */}
-                <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-teal-50 to-background p-6">
-                  <h3 className="mb-4 text-lg font-bold text-foreground">
-                    Interested in This Business?
-                  </h3>
-                  <form onSubmit={handleInterestSubmit} className="space-y-4">
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-foreground">
-                        Full Name *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={interestFormData.investorName}
-                        onChange={(e) => setInterestFormData({ ...interestFormData, investorName: e.target.value })}
-                        className="h-10 w-full rounded-lg border border-input bg-background px-3 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        placeholder="Your name"
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-foreground">
-                        Email *
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        value={interestFormData.email}
-                        onChange={(e) => setInterestFormData({ ...interestFormData, email: e.target.value })}
-                        className="h-10 w-full rounded-lg border border-input bg-background px-3 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        placeholder="your@email.com"
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-foreground">
-                        Phone *
-                      </label>
-                      <input
-                        type="tel"
-                        required
-                        value={interestFormData.phoneNumber}
-                        onChange={(e) => setInterestFormData({ ...interestFormData, phoneNumber: e.target.value })}
-                        className="h-10 w-full rounded-lg border border-input bg-background px-3 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        placeholder="+977 9XXXXXXXXX"
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-sm font-medium text-foreground">
-                        Message
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={interestFormData.message}
-                        onChange={(e) => setInterestFormData({ ...interestFormData, message: e.target.value })}
-                        className="w-full rounded-lg border border-input bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                        placeholder="Tell us about your investment interest..."
-                        disabled={isSubmitting}
-                      />
-                    </div>
-                    <label className="flex items-start gap-2 text-sm">
-                      <input
-                        type="checkbox"
-                        required
-                        checked={interestFormData.hasConsent}
-                        onChange={(e) => setInterestFormData({ ...interestFormData, hasConsent: e.target.checked })}
-                        className="mt-1 rounded border-input"
-                        disabled={isSubmitting}
-                      />
-                      <span className="text-muted-foreground">
-                        I agree to the Terms & Conditions and Privacy Policy
-                      </span>
-                    </label>
-                    <Button type="submit" variant="hero" className="w-full" disabled={isSubmitting}>
-                      {isSubmitting ? "Submitting..." : "Submit Interest"}
-                    </Button>
-                  </form>
-                  <p className="mt-4 flex items-center justify-center gap-1 text-xs text-muted-foreground">
-                    <Lock className="h-3 w-3" />
-                    Your information is kept private
-                  </p>
-                </div>
+            {/* Business Name */}
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+              {business.name}
+            </h1>
 
-                {/* Quick Info */}
-                <div className="rounded-xl border border-border bg-card p-6">
-                  <h3 className="mb-4 text-lg font-bold text-foreground">
-                    Quick Info
-                  </h3>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Reg. Number</span>
-                      <span className="font-medium text-foreground">
-                        {business.registrationNumber}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">
-                        Business Type
-                      </span>
-                      <span className="font-medium text-foreground">
-                        {business.businessType}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">
-                        Year Established
-                      </span>
-                      <span className="font-medium text-foreground">{business.yearEstablished}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Employees</span>
-                      <span className="font-medium text-foreground">{business.teamSize}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </aside>
+            {/* Badges */}
+            <div className="flex items-center justify-center gap-3">
+              <Badge variant="outline" className="border-gray-300 bg-white text-primary  font-medium px-4 py-1.5">
+                Sector: {business.category.name}
+              </Badge>
+              <Badge variant="outline" className="border-gray-300 bg-white text-primary font-medium px-4 py-1.5">
+                Stage: {getStageLabel(business.status)}
+              </Badge>
+            </div>
           </div>
 
-          {/* Related Businesses */}
-          {relatedBusinesses.length > 0 && (
-            <div className="mt-12">
-              <h2 className="mb-6 text-2xl font-bold text-foreground">
-                Similar Opportunities You Might Like
-              </h2>
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {relatedBusinesses.map((b) => (
-                  <BusinessCard key={b.id} business={b} />
-                ))}
+          {/* Stats Row - 5 Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-10">
+            {/* Investment Range */}
+            <div className="bg-white rounded-xl p-5 text-center shadow-sm border border-primary/20">
+              <BarChart3 className="h-6 w-6 mx-auto mb-2 text-primary " />
+              <p className="text-xs text-muted-foreground mb-1">Investment Range</p>
+              {/* <p className="text-sm font-bold text-primary">
+                {business.investmentCapacityMin && business.investmentCapacityMax
+                  ? formatInvestmentRange(business.investmentCapacityMin, business.investmentCapacityMax)
+                  : 'NPR 1 Lakhs - 10 Lakhs'}
+              </p> */}
+              <p className="text-sm font-bold text-primary">
+                  NPR 1 Lakh - 10 Lakhs
+              </p>
+            </div>
+
+            {/* Entry Price */}
+            <div className="bg-white rounded-xl p-5 text-center shadow-sm border border-primary/20 ">
+              <CircleDollarSign className="h-6 w-6 mx-auto mb-2 text-primary" />
+              <p className="text-xs text-muted-foreground mb-1">Entry Price</p>
+              <p className="text-sm font-bold text-primary">
+                NPR {business.pricePerUnit ? business.pricePerUnit.toLocaleString() : '100'}
+              </p>
+            </div>
+
+            {/* Return Options */}
+            <div className="bg-white rounded-xl p-5 text-center shadow-sm border-2 border-primary/20">
+              <RefreshCcw className="h-6 w-6 mx-auto mb-2 text-primary" />
+              <p className="text-xs text-muted-foreground mb-1">Return Options</p>
+              <p className="text-sm font-bold text-primary">
+                {business.expectedReturnOptions || 'IPO Upside'}
+              </p>
+            </div>
+
+            {/* Expected Return */}
+            <div className="bg-white rounded-xl p-5 text-center shadow-sm border-2 border-primary/20">
+              <TrendingUp className="h-6 w-6 mx-auto mb-2 text-primary" />
+              <p className="text-xs text-muted-foreground mb-1">Expected Return</p>
+              <p className="text-sm font-bold text-primary">10X over 5 years</p>
+            </div>
+
+            {/* Promoter Profile */}
+            <div className="bg-white rounded-xl p-5 text-center shadow-sm col-span-2 md:col-span-1 border-2 border-primary/20">
+              <Users className="h-6 w-6 mx-auto mb-2 text-primary" />
+              <p className="text-xs text-muted-foreground mb-1">Promoter Profile</p>
+              {/* <p className="text-sm font-bold text-primary">{business.name}</p> */}
+              <p className="text-sm font-bold text-primary">Trade Tower Group</p>
+            </div>
+          </div>
+
+          {/* Two Column Layout - About, Materials & Form */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-10 px-4 py-2">
+            {/* Left Column - About, Mission, Vision (3/5 width) */}
+            <div className="lg:col-span-3 order-1">
+              <div className="bg-white rounded-xl p-6 shadow-sm space-y-6">
+                {/* About Section */}
+                <div>
+                  <h2 className="text-xl font-bold text-foreground mb-4">
+                    About {business.name}
+                  </h2>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {business.fullDescription || business.briefDescription}
+                  </p>
+                </div>
+
+                {/* Mission Card */}
+                <div className="bg-[#EFFEF4] rounded-xl p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="h-12 w-12 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Globe className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-foreground mb-2">Our Mission</h3>
+                      <p className="text-sm text-muted-foreground">
+                        We invest in high-potential ventures, providing capital and strategic guidance to drive growth.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Vision Card */}
+                <div className="bg-[#EFFEF4] rounded-xl p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="h-12 w-12 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Eye className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-foreground mb-2">Our Vision</h3>
+                      <p className="text-sm text-muted-foreground">
+                        To be a trusted platform driving growth by partnering with entrepreneurs and institutions to shape Nepal's future.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          )}
+
+            {/* Investment Materials & Resources Section - Shows before form on mobile */}
+            <div className="order-2 lg:order-3 lg:col-span-5">
+              <div className="bg-white rounded-xl p-6 shadow-sm">
+                <h2 className="text-xl font-bold text-foreground mb-6">
+                  Investment Materials & Resources
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Pitch Deck */}
+                <a
+                  href={pitchDeck?.fileUrl || '#'}
+                  target={pitchDeck ? '_blank' : undefined}
+                  rel="noopener noreferrer"
+                  className={`bg-[#F8F8F8] rounded-xl p-5 flex items-center justify-between transition-all hover:bg-gray-100 ${!pitchDeck ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  onClick={(e) => !pitchDeck && e.preventDefault()}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <FileText className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground">Pitch Deck</h3>
+                      <p className="text-xs text-muted-foreground">View Pitch Deck</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </a>
+
+                {/* Application Form */}
+                <a
+                  href={applicationForm?.fileUrl || '#'}
+                  target={applicationForm ? '_blank' : undefined}
+                  rel="noopener noreferrer"
+                  className={`bg-[#F8F8F8] rounded-xl p-5 flex items-center justify-between transition-all hover:bg-gray-100 ${!applicationForm ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  onClick={(e) => !applicationForm && e.preventDefault()}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <FolderOpen className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground">Application Form</h3>
+                      <p className="text-xs text-muted-foreground">View Application Form</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </a>
+
+                {/* Video Introduction */}
+                <a
+                  href={video?.fileUrl || video?.externalUrl || '#'}
+                  target={video ? '_blank' : undefined}
+                  rel="noopener noreferrer"
+                  className={`bg-[#F8F8F8] rounded-xl p-5 flex items-center justify-between transition-all hover:bg-gray-100 ${!video ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  onClick={(e) => !video && e.preventDefault()}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Play className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground">Video Introduction</h3>
+                      <p className="text-xs text-muted-foreground">View Video</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column - Interest Form (2/5 width) - Shows last on mobile */}
+            <div className="lg:col-span-2 order-3 lg:order-2">
+              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                <h3 className="text-lg font-bold text-foreground mb-5">
+                  Interested in this Business?
+                </h3>
+                <form onSubmit={handleInterestSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      value={interestFormData.investorName}
+                      onChange={(e) => setInterestFormData({ ...interestFormData, investorName: e.target.value })}
+                      className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      placeholder="Your name"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">
+                      Email
+                    </label>
+                    <input
+                      type="text"
+                      value={interestFormData.email}
+                      onChange={(e) => setInterestFormData({ ...interestFormData, email: e.target.value })}
+                      className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      placeholder="your@email.com"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">
+                      Phone
+                    </label>
+                    <input
+                      type="text"
+                      value={interestFormData.phoneNumber}
+                      onChange={(e) => setInterestFormData({ ...interestFormData, phoneNumber: e.target.value })}
+                      className="h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      placeholder="+977 9XXXXXXXXX"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">
+                      Message
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={interestFormData.message}
+                      onChange={(e) => setInterestFormData({ ...interestFormData, message: e.target.value })}
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                      placeholder="Tell us about your interest..."
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full bg-primary hover:bg-primary/90 text-white font-semibold"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Submitting..." : "Submit Interest"}
+                  </Button>
+                </form>
+                <p className="mt-4 flex items-center justify-center gap-1 text-xs text-muted-foreground">
+                  <Lock className="h-3 w-3" />
+                  YOUR INFORMATION IS KEPT PRIVATE
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Disclaimer */}
+          <div className="text-center px-4 pb-4">
+            <p className="text-xs text-muted-foreground">
+              Information shown is indicative only. Investments in unlisted companies involve risk and limited liquidity. Investors should conduct their own due diligence and seek independent advice before investing.
+            </p>
+          </div>
+
         </div>
-      </section>
+      </div>
     </Layout>
   );
 }

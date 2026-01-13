@@ -73,7 +73,7 @@ export const MEDIA_TYPE_LABELS: Record<MediaType, string> = {
   FINANCIAL_DOCUMENT: 'Financial Document',
   PITCH_DECK: 'Pitch Deck',
   BROCHURE: 'Brochure',
-  DOCUMENT: 'Other Document',
+  DOCUMENT: 'Application Form',
   COMPANY_LOGO: 'Company Logo',
   GALLERY: 'Gallery Image',
   IMAGE: 'Image',

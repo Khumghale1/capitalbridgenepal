@@ -36,7 +36,7 @@ export default function HowItWorks() {
       description:
         "Access comprehensive business profiles including pitch decks, financial information, team details, and growth projections to make informed decisions.",
       details: [
-        "Download pitch decks and brochures",
+        "Download pitch decks and application forms",
         "Watch company presentation videos",
         "Review financial highlights",
       ],
@@ -73,7 +73,7 @@ export default function HowItWorks() {
       number: "2",
       title: "Showcase Your Potential",
       description:
-        "Make your profile stand out by uploading pitch decks, videos, brochures, and financial information. Show investors why they should invest in you.",
+        "Make your profile stand out by uploading pitch decks, videos, application forms, and financial information. Show investors why they should invest in you.",
       details: [
         "Upload pitch deck and presentations",
         "Add company videos and media",

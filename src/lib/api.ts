@@ -118,11 +118,10 @@ export const api = {
     // Submit interest (Public)
     submit: async (data: {
       businessId: string;
-      investorName: string;
-      phoneNumber: string;
-      email: string;
+      investorName?: string;
+      phoneNumber?: string;
+      email?: string;
       message?: string;
-      hasConsent?: boolean;
     }) => {
       return apiRequest('/api/interests', {
         method: 'POST',

@@ -1402,10 +1402,10 @@ export default function Register() {
                           </div>
                         </div>
 
-                        {/* Other Documents */}
+                        {/* Application Form */}
                         <div className="rounded-lg border-2 border-dashed border-border bg-secondary/20 p-6">
                           <div className="space-y-2">
-                            <Label htmlFor="otherDocs">Other Documents (Optional)</Label>
+                            <Label htmlFor="otherDocs">Application Form (Optional)</Label>
                             <input
                               ref={(el) => { fileInputRefs.current['other'] = el; }}
                               id="otherDocs"
@@ -1414,7 +1414,7 @@ export default function Register() {
                               multiple
                               className="hidden"
                               onChange={(e) => {
-                                handleFileSelect('DOCUMENT', 'Other Document', e.target.files);
+                                handleFileSelect('DOCUMENT', 'Application Form', e.target.files);
                                 e.target.value = '';
                               }}
                             />

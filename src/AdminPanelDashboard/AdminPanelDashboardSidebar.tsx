@@ -33,7 +33,7 @@ export function AdminPanelDashboardSidebar() {
         <Link to="/" className="flex items-center gap-2">
           <img
             src="/images/mainlogo.png"
-            alt="AarthiQ Logo"
+            alt="aarthiQ Logo"
             className="h-12 w-12"
           />
           <span className="font-bold text-lg">Admin <span className="text-green-600">Panel</span></span>
