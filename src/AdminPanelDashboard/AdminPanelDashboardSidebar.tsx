@@ -6,8 +6,6 @@ import {
   CheckCircle,
   MessageSquare,
   LogOut,
-  Shield,
-  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -18,7 +16,6 @@ const navigation = [
   { name: "Business Inquiries", href: "/admin/dashboard/inquiries", icon: MessageSquare },
   { name: "Pending Approvals", href: "/admin/dashboard/approvals", icon: CheckCircle },
   { name: "Active Businesses", href: "/admin/dashboard/businesses", icon: Building2 },
-  { name: "Removal Requests", href: "/admin/dashboard/removal-requests", icon: Trash2 },
 ];
 
 export function AdminPanelDashboardSidebar() {

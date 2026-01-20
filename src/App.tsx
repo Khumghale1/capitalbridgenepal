@@ -30,7 +30,6 @@ import AdminPanelDashboard from "./AdminPanelDashboard";
 import AdminBusinessInquiries from "./AdminPanelDashboard/BusinessInquiries";
 import AdminPendingApprovals from "./AdminPanelDashboard/PendingApprovals";
 import AdminActiveBusinesses from "./AdminPanelDashboard/ActiveBusinesses";
-import AdminRemovalRequests from "./AdminPanelDashboard/RemovalRequests";
 
 const queryClient = new QueryClient();
 
@@ -66,7 +65,6 @@ const App = () => (
           <Route path="/admin/dashboard/inquiries" element={<AdminProtectedRoute><AdminBusinessInquiries /></AdminProtectedRoute>} />
           <Route path="/admin/dashboard/approvals" element={<AdminProtectedRoute><AdminPendingApprovals /></AdminProtectedRoute>} />
           <Route path="/admin/dashboard/businesses" element={<AdminProtectedRoute><AdminActiveBusinesses /></AdminProtectedRoute>} />
-          <Route path="/admin/dashboard/RemovalRequests" element={<AdminProtectedRoute><AdminRemovalRequests /></AdminProtectedRoute>} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -7,7 +7,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, Edit, Ban, Search, Eye, Loader2, CheckCircle, AlertCircle, Mail } from "lucide-react";
+import { Building2, Edit, Ban, Search, Eye, Loader2, CheckCircle, AlertCircle, Mail, MessageSquare, Download, Plus } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +35,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   Sheet,
@@ -30,7 +46,17 @@ import {
 } from "@/components/ui/sheet";
 import { api } from "@/lib/api";
 
+interface BusinessMedia {
+  id: string;
+  mediaType: string;
+  fileName?: string;
+  fileUrl?: string;
+  fileSize?: string;
+  title?: string;
+}
+
 interface Business {
+  [key: string]: unknown;
   id: string;
   name: string;
   registrationNumber: string;
@@ -68,6 +94,7 @@ interface Business {
   viewCount: number;
   createdAt: string;
   updatedAt: string;
+  media?: BusinessMedia[];
 }
 
 interface BusinessResponse {
@@ -78,6 +105,25 @@ interface BusinessResponse {
     total: number;
     totalPages: number;
   };
+}
+
+interface FollowUp {
+  id: string;
+  followUpNumber: number;
+  remarks: string;
+  createdAt: string;
+}
+
+interface Interest {
+  id: string;
+  investorName: string;
+  email: string;
+  phoneNumber: string;
+  message: string | null;
+  submittedAt: string;
+  contacted: boolean;
+  followUpRemarks: string | null;
+  followUps: FollowUp[];
 }
 
 export default function ActiveBusinesses() {
@@ -96,8 +142,22 @@ export default function ActiveBusinesses() {
   const [editingBusiness, setEditingBusiness] = useState<Business | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Inquiries Dialog
+  const [inquiriesDialogOpen, setInquiriesDialogOpen] = useState(false);
+  const [inquiriesBusiness, setInquiriesBusiness] = useState<Business | null>(null);
+  const [inquiries, setInquiries] = useState<Interest[]>([]);
+  const [isLoadingInquiries, setIsLoadingInquiries] = useState(false);
+  const [updatingInterestId, setUpdatingInterestId] = useState<string | null>(null);
+
+  // Add follow-up dialog
+  const [addFollowUpOpen, setAddFollowUpOpen] = useState(false);
+  const [selectedInterestId, setSelectedInterestId] = useState<string | null>(null);
+  const [newFollowUpRemarks, setNewFollowUpRemarks] = useState("");
+  const [isAddingFollowUp, setIsAddingFollowUp] = useState(false);
+
   useEffect(() => {
     fetchBusinesses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchBusinesses = async () => {
@@ -182,6 +242,199 @@ export default function ActiveBusinesses() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleViewInquiries = async (business: Business) => {
+    setInquiriesBusiness(business);
+    setInquiriesDialogOpen(true);
+    setIsLoadingInquiries(true);
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response: any = await api.interests.getByBusinessId(business.id);
+      setInquiries(response.interests || []);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load inquiries",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingInquiries(false);
+    }
+  };
+
+  const handleContactedChange = async (interestId: string, contacted: boolean) => {
+    if (!inquiriesBusiness) return;
+
+    try {
+      setUpdatingInterestId(interestId);
+      await api.interests.update(interestId, { contacted, businessId: inquiriesBusiness.id });
+
+      setInquiries(prev =>
+        prev.map(interest =>
+          interest.id === interestId
+            ? { ...interest, contacted }
+            : interest
+        )
+      );
+
+      toast({
+        title: "Updated",
+        description: `Marked as ${contacted ? 'contacted' : 'not contacted'}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingInterestId(null);
+    }
+  };
+
+  const handleRemarksChange = async (interestId: string, followUpRemarks: string) => {
+    if (!inquiriesBusiness) return;
+
+    try {
+      setUpdatingInterestId(interestId);
+      await api.interests.update(interestId, { followUpRemarks, businessId: inquiriesBusiness.id });
+
+      setInquiries(prev =>
+        prev.map(interest =>
+          interest.id === interestId
+            ? { ...interest, followUpRemarks }
+            : interest
+        )
+      );
+
+      toast({
+        title: "Updated",
+        description: "Remarks saved successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingInterestId(null);
+    }
+  };
+
+  const openAddFollowUpDialog = (interestId: string) => {
+    setSelectedInterestId(interestId);
+    setNewFollowUpRemarks("");
+    setAddFollowUpOpen(true);
+  };
+
+  const handleAddFollowUp = async () => {
+    if (!selectedInterestId || !newFollowUpRemarks.trim() || !inquiriesBusiness) return;
+
+    try {
+      setIsAddingFollowUp(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response: any = await api.interests.addFollowUp(selectedInterestId, newFollowUpRemarks, inquiriesBusiness.id);
+
+      // Update the local state with the new follow-up
+      setInquiries(prev =>
+        prev.map(interest => {
+          if (interest.id === selectedInterestId) {
+            return {
+              ...interest,
+              contacted: true,
+              followUps: [...(interest.followUps || []), response.followUp]
+            };
+          }
+          return interest;
+        })
+      );
+
+      toast({
+        title: "Success",
+        description: "Follow-up added successfully",
+      });
+
+      setAddFollowUpOpen(false);
+      setNewFollowUpRemarks("");
+      setSelectedInterestId(null);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to add follow-up';
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsAddingFollowUp(false);
+    }
+  };
+
+  // Calculate max follow-ups to determine column count
+  const maxFollowUps = Math.max(0, ...inquiries.map(i => i.followUps?.length || 0));
+
+  const downloadInquiriesCSV = () => {
+    if (inquiries.length === 0 || !inquiriesBusiness) {
+      toast({
+        title: "No data",
+        description: "There are no inquiries to download",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // CSV headers - dynamic based on max follow-ups
+    const headers = [
+      "Name", "Email", "Phone Number", "Message", "Contacted",
+      ...Array.from({ length: maxFollowUps }, (_, i) => `Follow-up ${i + 1}`),
+      "Submitted At"
+    ];
+
+    const rows = inquiries.map(interest => {
+      const followUpData = Array.from({ length: maxFollowUps }, (_, i) => {
+        const followUp = interest.followUps?.find(f => f.followUpNumber === i + 1);
+        return followUp ? followUp.remarks : "";
+      });
+
+      return [
+        interest.investorName,
+        interest.email,
+        interest.phoneNumber,
+        interest.message || "",
+        interest.contacted ? "Yes" : "No",
+        ...followUpData,
+        new Date(interest.submittedAt).toLocaleString()
+      ];
+    });
+
+    const escapeCSV = (value: string) => {
+      if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+        return `"${value.replace(/"/g, '""')}"`;
+      }
+      return value;
+    };
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(escapeCSV).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${inquiriesBusiness.name.replace(/[^a-z0-9]/gi, '_')}_inquiries_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "Downloaded",
+      description: "CSV file downloaded successfully",
+    });
   };
 
   const activeCount = businesses.filter(b => b.isActive).length;
@@ -332,6 +585,10 @@ export default function ActiveBusinesses() {
                         <DropdownMenuItem onClick={() => handleViewDetails(business)}>
                           <Eye className="mr-2 h-4 w-4" />
                           View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleViewInquiries(business)}>
+                          <MessageSquare className="mr-2 h-4 w-4" />
+                          View Inquiries
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleEditBusiness(business)}>
                           <Edit className="mr-2 h-4 w-4" />
@@ -531,7 +788,7 @@ export default function ActiveBusinesses() {
                 <div>
                   <h4 className="font-semibold mb-3 text-base">Uploaded Documents & Media</h4>
                   <div className="space-y-3">
-                    {selectedBusiness.media.map((doc: any) => (
+                    {selectedBusiness.media.map((doc: BusinessMedia) => (
                       <div key={doc.id} className="flex items-center justify-between rounded-lg border p-3 bg-secondary/30">
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
@@ -723,6 +980,155 @@ export default function ActiveBusinesses() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Inquiries Dialog */}
+      <Dialog open={inquiriesDialogOpen} onOpenChange={setInquiriesDialogOpen}>
+        <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle>Investment Inquiries</DialogTitle>
+                <DialogDescription>
+                  All inquiries for {inquiriesBusiness?.name}
+                </DialogDescription>
+              </div>
+              <Button onClick={downloadInquiriesCSV} variant="outline" className="gap-2" disabled={inquiries.length === 0}>
+                <Download className="h-4 w-4" />
+                Download CSV
+              </Button>
+            </div>
+          </DialogHeader>
+
+          {isLoadingInquiries ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2 text-muted-foreground">Loading inquiries...</span>
+            </div>
+          ) : inquiries.length === 0 ? (
+            <div className="text-center py-12">
+              <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-20" />
+              <p className="text-muted-foreground font-medium">No inquiries yet</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                This business has not received any investment inquiries
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[120px]">Name</TableHead>
+                    <TableHead className="min-w-[180px]">Email</TableHead>
+                    <TableHead className="min-w-[120px]">Phone Number</TableHead>
+                    <TableHead className="min-w-[200px]">Message</TableHead>
+                    <TableHead className="min-w-[100px]">Contacted</TableHead>
+                    {/* Dynamic Follow-up columns */}
+                    {Array.from({ length: maxFollowUps }, (_, i) => (
+                      <TableHead key={`followup-header-${i}`} className="min-w-[150px]">
+                        Follow-up {i + 1}
+                      </TableHead>
+                    ))}
+                    <TableHead className="min-w-[60px]">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {inquiries.map((interest) => (
+                    <TableRow key={interest.id}>
+                      <TableCell className="font-medium">{interest.investorName}</TableCell>
+                      <TableCell>{interest.email}</TableCell>
+                      <TableCell>{interest.phoneNumber}</TableCell>
+                      <TableCell className="max-w-[200px]">
+                        <p className="truncate" title={interest.message || ""}>
+                          {interest.message || "-"}
+                        </p>
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={interest.contacted ? "yes" : "no"}
+                          onValueChange={(value) => handleContactedChange(interest.id, value === "yes")}
+                          disabled={updatingInterestId === interest.id}
+                        >
+                          <SelectTrigger className="w-[80px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="yes">Yes</SelectItem>
+                            <SelectItem value="no">No</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      {/* Dynamic Follow-up cells */}
+                      {Array.from({ length: maxFollowUps }, (_, i) => {
+                        const followUp = interest.followUps?.find(f => f.followUpNumber === i + 1);
+                        return (
+                          <TableCell key={`followup-${interest.id}-${i}`} className="min-w-[150px]">
+                            {followUp ? (
+                              <div className="text-sm" title={followUp.remarks}>
+                                <p className="truncate max-w-[140px]">{followUp.remarks}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(followUp.createdAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                        );
+                      })}
+                      {/* Add Follow-up button */}
+                      <TableCell>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => openAddFollowUpDialog(interest.id)}
+                          title="Add Follow-up"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Follow-up Dialog */}
+      <Dialog open={addFollowUpOpen} onOpenChange={setAddFollowUpOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Follow-up</DialogTitle>
+            <DialogDescription>
+              Add a new follow-up note for this inquiry
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              placeholder="Enter follow-up remarks..."
+              value={newFollowUpRemarks}
+              onChange={(e) => setNewFollowUpRemarks(e.target.value)}
+              rows={4}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddFollowUpOpen(false)} disabled={isAddingFollowUp}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddFollowUp} disabled={isAddingFollowUp || !newFollowUpRemarks.trim()}>
+              {isAddingFollowUp ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                'Add Follow-up'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminPanelDashboardLayout>
   );
 }

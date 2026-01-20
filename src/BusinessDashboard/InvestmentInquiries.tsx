@@ -2,10 +2,41 @@ import { useState, useEffect } from "react";
 import { BusinessDashboardLayout } from "./BusinessDashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { MessageSquare, User, Calendar, Loader2, Mail, Phone } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { MessageSquare, Loader2, Download, Check, X, Plus } from "lucide-react";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+
+interface FollowUp {
+  id: string;
+  followUpNumber: number;
+  remarks: string;
+  createdAt: string;
+}
 
 interface Interest {
   id: string;
@@ -14,6 +45,9 @@ interface Interest {
   phoneNumber: string;
   message: string | null;
   submittedAt: string;
+  contacted: boolean;
+  followUpRemarks: string | null;
+  followUps: FollowUp[];
 }
 
 
@@ -22,6 +56,13 @@ export default function InvestmentInquiries() {
   const [interests, setInterests] = useState<Interest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  // Add follow-up dialog
+  const [addFollowUpOpen, setAddFollowUpOpen] = useState(false);
+  const [selectedInterestId, setSelectedInterestId] = useState<string | null>(null);
+  const [newFollowUpRemarks, setNewFollowUpRemarks] = useState("");
+  const [isAddingFollowUp, setIsAddingFollowUp] = useState(false);
 
   useEffect(() => {
     fetchInquiries();
@@ -49,18 +90,150 @@ export default function InvestmentInquiries() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
+  const handleContactedChange = async (interestId: string, contacted: boolean) => {
+    try {
+      setUpdatingId(interestId);
+      await api.businessProfile.updateInterest(interestId, { contacted });
 
-    if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
-    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-    if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      setInterests(prev =>
+        prev.map(interest =>
+          interest.id === interestId
+            ? { ...interest, contacted }
+            : interest
+        )
+      );
+
+      toast({
+        title: "Updated",
+        description: `Marked as ${contacted ? 'contacted' : 'not contacted'}`,
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update';
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const openAddFollowUpDialog = (interestId: string) => {
+    setSelectedInterestId(interestId);
+    setNewFollowUpRemarks("");
+    setAddFollowUpOpen(true);
+  };
+
+  const handleAddFollowUp = async () => {
+    if (!selectedInterestId || !newFollowUpRemarks.trim()) return;
+
+    try {
+      setIsAddingFollowUp(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response: any = await api.businessProfile.addFollowUp(selectedInterestId, newFollowUpRemarks);
+
+      // Update the local state with the new follow-up
+      setInterests(prev =>
+        prev.map(interest => {
+          if (interest.id === selectedInterestId) {
+            return {
+              ...interest,
+              contacted: true,
+              followUps: [...interest.followUps, response.followUp]
+            };
+          }
+          return interest;
+        })
+      );
+
+      toast({
+        title: "Success",
+        description: "Follow-up added successfully",
+      });
+
+      setAddFollowUpOpen(false);
+      setNewFollowUpRemarks("");
+      setSelectedInterestId(null);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to add follow-up';
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsAddingFollowUp(false);
+    }
+  };
+
+  // Calculate max follow-ups to determine column count
+  const maxFollowUps = Math.max(0, ...interests.map(i => i.followUps?.length || 0));
+
+  const downloadCSV = () => {
+    if (interests.length === 0) {
+      toast({
+        title: "No data",
+        description: "There are no inquiries to download",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // CSV headers - dynamic based on max follow-ups
+    const headers = [
+      "Name", "Email", "Phone Number", "Message", "Contacted",
+      ...Array.from({ length: maxFollowUps }, (_, i) => `Follow-up ${i + 1}`),
+      "Submitted At"
+    ];
+
+    // CSV rows
+    const rows = interests.map(interest => {
+      const followUpData = Array.from({ length: maxFollowUps }, (_, i) => {
+        const followUp = interest.followUps?.find(f => f.followUpNumber === i + 1);
+        return followUp ? followUp.remarks : "";
+      });
+
+      return [
+        interest.investorName,
+        interest.email,
+        interest.phoneNumber,
+        interest.message || "",
+        interest.contacted ? "Yes" : "No",
+        ...followUpData,
+        new Date(interest.submittedAt).toLocaleString()
+      ];
+    });
+
+    // Escape CSV values
+    const escapeCSV = (value: string) => {
+      if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+        return `"${value.replace(/"/g, '""')}"`;
+      }
+      return value;
+    };
+
+    // Build CSV content
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(escapeCSV).join(','))
+    ].join('\n');
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `investment_inquiries_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "Downloaded",
+      description: "CSV file downloaded successfully",
+    });
   };
 
   return (
@@ -87,33 +260,27 @@ export default function InvestmentInquiries() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Recent</CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Contacted</CardTitle>
+            <Check className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {interests.filter(i => {
-                const diffHours = (new Date().getTime() - new Date(i.submittedAt).getTime()) / 3600000;
-                return diffHours < 24;
-              }).length}
+              {interests.filter(i => i.contacted).length}
             </div>
-            <p className="text-xs text-muted-foreground">Last 24 hours</p>
+            <p className="text-xs text-muted-foreground">Follow-ups done</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">This Week</CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Pending</CardTitle>
+            <X className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {interests.filter(i => {
-                const diffDays = (new Date().getTime() - new Date(i.submittedAt).getTime()) / 86400000;
-                return diffDays < 7;
-              }).length}
+              {interests.filter(i => !i.contacted).length}
             </div>
-            <p className="text-xs text-muted-foreground">Last 7 days</p>
+            <p className="text-xs text-muted-foreground">Not contacted yet</p>
           </CardContent>
         </Card>
       </div>
@@ -140,14 +307,20 @@ export default function InvestmentInquiries() {
         </Card>
       )}
 
-      {/* Inquiries List */}
+      {/* Inquiries Table */}
       {!isLoading && !error && (
         <Card>
-          <CardHeader>
-            <CardTitle>All Inquiries</CardTitle>
-            <CardDescription>
-              Investment inquiries from potential investors
-            </CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>All Inquiries</CardTitle>
+              <CardDescription>
+                Investment inquiries from potential investors
+              </CardDescription>
+            </div>
+            <Button onClick={downloadCSV} variant="outline" className="gap-2">
+              <Download className="h-4 w-4" />
+              Download CSV
+            </Button>
           </CardHeader>
           <CardContent>
             {interests.length === 0 ? (
@@ -159,53 +332,123 @@ export default function InvestmentInquiries() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {interests.map((interest) => {
-                  const isRecent = (new Date().getTime() - new Date(interest.submittedAt).getTime()) / 3600000 < 24;
-
-                  return (
-                    <div key={interest.id} className="flex items-start justify-between rounded-lg border p-4">
-                      <div className="flex gap-4 flex-1">
-                        <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                          <User className="h-6 w-6 text-primary" />
-                        </div>
-                        <div className="space-y-1 flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="font-semibold">{interest.investorName}</h4>
-                            {isRecent && <Badge>New</Badge>}
-                          </div>
-
-                          <div className="flex flex-col gap-1 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <Mail className="h-3 w-3 shrink-0" />
-                              <span className="truncate">{interest.email}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Phone className="h-3 w-3 shrink-0" />
-                              <span>{interest.phoneNumber}</span>
-                            </div>
-                          </div>
-
-                          {interest.message && (
-                            <div className="mt-2 bg-secondary/50 rounded p-2">
-                              <p className="text-sm text-muted-foreground italic">"{interest.message}"</p>
-                            </div>
-                          )}
-
-                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-2">
-                            <Calendar className="h-3 w-3" />
-                            {formatDate(interest.submittedAt)}
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[120px]">Name</TableHead>
+                      <TableHead className="min-w-[180px]">Email</TableHead>
+                      <TableHead className="min-w-[120px]">Phone Number</TableHead>
+                      <TableHead className="min-w-[200px]">Message</TableHead>
+                      <TableHead className="min-w-[100px]">Contacted</TableHead>
+                      {/* Dynamic Follow-up columns */}
+                      {Array.from({ length: maxFollowUps }, (_, i) => (
+                        <TableHead key={`followup-header-${i}`} className="min-w-[150px]">
+                          Follow-up {i + 1}
+                        </TableHead>
+                      ))}
+                      <TableHead className="min-w-[60px]">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {interests.map((interest) => (
+                      <TableRow key={interest.id}>
+                        <TableCell className="font-medium">{interest.investorName}</TableCell>
+                        <TableCell>{interest.email}</TableCell>
+                        <TableCell>{interest.phoneNumber}</TableCell>
+                        <TableCell className="max-w-[200px]">
+                          <p className="truncate" title={interest.message || ""}>
+                            {interest.message || "-"}
                           </p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                        </TableCell>
+                        <TableCell>
+                          <Select
+                            value={interest.contacted ? "yes" : "no"}
+                            onValueChange={(value) => handleContactedChange(interest.id, value === "yes")}
+                            disabled={updatingId === interest.id}
+                          >
+                            <SelectTrigger className="w-[80px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="yes">Yes</SelectItem>
+                              <SelectItem value="no">No</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        {/* Dynamic Follow-up cells */}
+                        {Array.from({ length: maxFollowUps }, (_, i) => {
+                          const followUp = interest.followUps?.find(f => f.followUpNumber === i + 1);
+                          return (
+                            <TableCell key={`followup-${interest.id}-${i}`} className="min-w-[150px]">
+                              {followUp ? (
+                                <div className="text-sm" title={followUp.remarks}>
+                                  <p className="truncate max-w-[140px]">{followUp.remarks}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {new Date(followUp.createdAt).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )}
+                            </TableCell>
+                          );
+                        })}
+                        {/* Add Follow-up button */}
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => openAddFollowUpDialog(interest.id)}
+                            title="Add Follow-up"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             )}
           </CardContent>
         </Card>
       )}
+
+      {/* Add Follow-up Dialog */}
+      <Dialog open={addFollowUpOpen} onOpenChange={setAddFollowUpOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Follow-up</DialogTitle>
+            <DialogDescription>
+              Add a new follow-up note for this inquiry
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              placeholder="Enter follow-up remarks..."
+              value={newFollowUpRemarks}
+              onChange={(e) => setNewFollowUpRemarks(e.target.value)}
+              rows={4}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddFollowUpOpen(false)} disabled={isAddingFollowUp}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddFollowUp} disabled={isAddingFollowUp || !newFollowUpRemarks.trim()}>
+              {isAddingFollowUp ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                'Add Follow-up'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </BusinessDashboardLayout>
   );
 }

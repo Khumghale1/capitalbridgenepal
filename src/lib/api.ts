@@ -143,6 +143,38 @@ export const api = {
         method: 'GET',
       });
     },
+
+    // Get interests for a specific business (Admin only)
+    getByBusinessId: async (businessId: string, params?: { page?: number; limit?: number }) => {
+      const queryParams = new URLSearchParams();
+      if (params?.page) queryParams.append('page', params.page.toString());
+      if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+      const query = queryParams.toString();
+      const endpoint = query
+        ? `/api/interests/business/${businessId}?${query}`
+        : `/api/interests/business/${businessId}`;
+
+      return apiRequest(endpoint, {
+        method: 'GET',
+      });
+    },
+
+    // Update interest follow-up details (Admin only)
+    update: async (interestId: string, data: { contacted?: boolean; followUpRemarks?: string; businessId: string }) => {
+      return apiRequest(`/api/interests/${interestId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+
+    // Add a new follow-up to an interest (Admin only)
+    addFollowUp: async (interestId: string, remarks: string, businessId: string) => {
+      return apiRequest(`/api/interests/${interestId}/followups`, {
+        method: 'POST',
+        body: JSON.stringify({ remarks, businessId }),
+      });
+    },
   },
 
   // Business APIs
@@ -352,6 +384,22 @@ export const api = {
       return apiRequest('/api/business/request-removal', {
         method: 'POST',
         body: JSON.stringify(data),
+      });
+    },
+
+    // Update interest follow-up details
+    updateInterest: async (interestId: string, data: { contacted?: boolean; followUpRemarks?: string }) => {
+      return apiRequest(`/api/business/interests/${interestId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+
+    // Add a new follow-up to an interest
+    addFollowUp: async (interestId: string, remarks: string) => {
+      return apiRequest(`/api/business/interests/${interestId}/followups`, {
+        method: 'POST',
+        body: JSON.stringify({ remarks }),
       });
     },
   },
