@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, Edit, Ban, Search, Eye, Loader2, CheckCircle, AlertCircle, Mail, MessageSquare, Download, Plus } from "lucide-react";
+import { Building2, Edit, Ban, Search, Eye, Loader2, CheckCircle, AlertCircle, Mail, MessageSquare, Download, Plus, Pencil, Trash2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -155,6 +155,21 @@ export default function ActiveBusinesses() {
   const [newFollowUpRemarks, setNewFollowUpRemarks] = useState("");
   const [isAddingFollowUp, setIsAddingFollowUp] = useState(false);
 
+  // Edit follow-up dialog
+  const [editFollowUpOpen, setEditFollowUpOpen] = useState(false);
+  const [editingFollowUp, setEditingFollowUp] = useState<FollowUp | null>(null);
+  const [editFollowUpRemarks, setEditFollowUpRemarks] = useState("");
+  const [isEditingFollowUp, setIsEditingFollowUp] = useState(false);
+
+  // Delete follow-up dialog
+  const [deleteFollowUpOpen, setDeleteFollowUpOpen] = useState(false);
+  const [deletingFollowUp, setDeletingFollowUp] = useState<FollowUp | null>(null);
+  const [isDeletingFollowUp, setIsDeletingFollowUp] = useState(false);
+
+  // Inquiries pagination
+  const [inquiriesPage, setInquiriesPage] = useState(1);
+  const inquiriesPerPage = 10;
+
   useEffect(() => {
     fetchBusinesses();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -248,6 +263,7 @@ export default function ActiveBusinesses() {
     setInquiriesBusiness(business);
     setInquiriesDialogOpen(true);
     setIsLoadingInquiries(true);
+    setInquiriesPage(1);
 
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -372,8 +388,98 @@ export default function ActiveBusinesses() {
     }
   };
 
+  const openEditFollowUpDialog = (followUp: FollowUp) => {
+    setEditingFollowUp(followUp);
+    setEditFollowUpRemarks(followUp.remarks);
+    setEditFollowUpOpen(true);
+  };
+
+  const handleEditFollowUp = async () => {
+    if (!editingFollowUp || !editFollowUpRemarks.trim() || !inquiriesBusiness) return;
+
+    try {
+      setIsEditingFollowUp(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const response: any = await api.interests.updateFollowUp(editingFollowUp.id, editFollowUpRemarks, inquiriesBusiness.id);
+
+      // Update the local state
+      setInquiries(prev =>
+        prev.map(interest => ({
+          ...interest,
+          followUps: interest.followUps?.map(f =>
+            f.id === editingFollowUp.id ? { ...f, remarks: response.followUp.remarks } : f
+          ) || []
+        }))
+      );
+
+      toast({
+        title: "Success",
+        description: "Follow-up updated successfully",
+      });
+
+      setEditFollowUpOpen(false);
+      setEditingFollowUp(null);
+      setEditFollowUpRemarks("");
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update follow-up';
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsEditingFollowUp(false);
+    }
+  };
+
+  const openDeleteFollowUpDialog = (followUp: FollowUp) => {
+    setDeletingFollowUp(followUp);
+    setDeleteFollowUpOpen(true);
+  };
+
+  const handleDeleteFollowUp = async () => {
+    if (!deletingFollowUp || !inquiriesBusiness) return;
+
+    try {
+      setIsDeletingFollowUp(true);
+      await api.interests.deleteFollowUp(deletingFollowUp.id, inquiriesBusiness.id);
+
+      // Update the local state
+      setInquiries(prev =>
+        prev.map(interest => ({
+          ...interest,
+          followUps: interest.followUps?.filter(f => f.id !== deletingFollowUp.id) || []
+        }))
+      );
+
+      toast({
+        title: "Success",
+        description: "Follow-up deleted successfully",
+      });
+
+      setDeleteFollowUpOpen(false);
+      setDeletingFollowUp(null);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete follow-up';
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeletingFollowUp(false);
+    }
+  };
+
   // Calculate max follow-ups to determine column count
   const maxFollowUps = Math.max(0, ...inquiries.map(i => i.followUps?.length || 0));
+
+  // Pagination calculations for inquiries
+  const totalInquiriesPages = Math.ceil(inquiries.length / inquiriesPerPage);
+  const paginatedInquiries = inquiries.slice(
+    (inquiriesPage - 1) * inquiriesPerPage,
+    inquiriesPage * inquiriesPerPage
+  );
 
   const downloadInquiriesCSV = () => {
     if (inquiries.length === 0 || !inquiriesBusiness) {
@@ -983,7 +1089,7 @@ export default function ActiveBusinesses() {
 
       {/* Inquiries Dialog */}
       <Dialog open={inquiriesDialogOpen} onOpenChange={setInquiriesDialogOpen}>
-        <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -1032,7 +1138,7 @@ export default function ActiveBusinesses() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {inquiries.map((interest) => (
+                  {paginatedInquiries.map((interest) => (
                     <TableRow key={interest.id}>
                       <TableCell className="font-medium">{interest.investorName}</TableCell>
                       <TableCell>{interest.email}</TableCell>
@@ -1061,13 +1167,33 @@ export default function ActiveBusinesses() {
                       {Array.from({ length: maxFollowUps }, (_, i) => {
                         const followUp = interest.followUps?.find(f => f.followUpNumber === i + 1);
                         return (
-                          <TableCell key={`followup-${interest.id}-${i}`} className="min-w-[150px]">
+                          <TableCell key={`followup-${interest.id}-${i}`} className="min-w-[180px]">
                             {followUp ? (
-                              <div className="text-sm" title={followUp.remarks}>
-                                <p className="truncate max-w-[140px]">{followUp.remarks}</p>
+                              <div className="text-sm">
+                                <p className="truncate max-w-[120px]" title={followUp.remarks}>{followUp.remarks}</p>
                                 <p className="text-xs text-muted-foreground">
                                   {new Date(followUp.createdAt).toLocaleDateString()}
                                 </p>
+                                <div className="flex gap-1 mt-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => openEditFollowUpDialog(followUp)}
+                                    title="Edit Follow-up"
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6 text-destructive hover:text-destructive"
+                                    onClick={() => openDeleteFollowUpDialog(followUp)}
+                                    title="Delete Follow-up"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
                               </div>
                             ) : (
                               <span className="text-muted-foreground">-</span>
@@ -1090,6 +1216,36 @@ export default function ActiveBusinesses() {
                   ))}
                 </TableBody>
               </Table>
+
+              {/* Pagination Controls */}
+              {totalInquiriesPages > 1 && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    Showing {((inquiriesPage - 1) * inquiriesPerPage) + 1} - {Math.min(inquiriesPage * inquiriesPerPage, inquiries.length)} of {inquiries.length} inquiries
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setInquiriesPage(prev => Math.max(1, prev - 1))}
+                      disabled={inquiriesPage === 1}
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      Page {inquiriesPage} of {totalInquiriesPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setInquiriesPage(prev => Math.min(totalInquiriesPages, prev + 1))}
+                      disabled={inquiriesPage === totalInquiriesPages}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
@@ -1124,6 +1280,68 @@ export default function ActiveBusinesses() {
                 </>
               ) : (
                 'Add Follow-up'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Follow-up Dialog */}
+      <Dialog open={editFollowUpOpen} onOpenChange={setEditFollowUpOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Follow-up</DialogTitle>
+            <DialogDescription>
+              Update the follow-up remarks
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Textarea
+              placeholder="Enter follow-up remarks..."
+              value={editFollowUpRemarks}
+              onChange={(e) => setEditFollowUpRemarks(e.target.value)}
+              rows={4}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditFollowUpOpen(false)} disabled={isEditingFollowUp}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditFollowUp} disabled={isEditingFollowUp || !editFollowUpRemarks.trim()}>
+              {isEditingFollowUp ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Follow-up Dialog */}
+      <Dialog open={deleteFollowUpOpen} onOpenChange={setDeleteFollowUpOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Follow-up</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this follow-up? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteFollowUpOpen(false)} disabled={isDeletingFollowUp}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteFollowUp} disabled={isDeletingFollowUp}>
+              {isDeletingFollowUp ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
               )}
             </Button>
           </DialogFooter>

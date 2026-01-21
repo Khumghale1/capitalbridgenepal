@@ -175,6 +175,22 @@ export const api = {
         body: JSON.stringify({ remarks, businessId }),
       });
     },
+
+    // Update a follow-up (Admin only)
+    updateFollowUp: async (followUpId: string, remarks: string, businessId: string) => {
+      return apiRequest(`/api/interests/followups/${followUpId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ remarks, businessId }),
+      });
+    },
+
+    // Delete a follow-up (Admin only)
+    deleteFollowUp: async (followUpId: string, businessId: string) => {
+      return apiRequest(`/api/interests/followups/${followUpId}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ businessId }),
+      });
+    },
   },
 
   // Business APIs
@@ -400,6 +416,21 @@ export const api = {
       return apiRequest(`/api/business/interests/${interestId}/followups`, {
         method: 'POST',
         body: JSON.stringify({ remarks }),
+      });
+    },
+
+    // Update a follow-up
+    updateFollowUp: async (followUpId: string, remarks: string) => {
+      return apiRequest(`/api/business/followups/${followUpId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ remarks }),
+      });
+    },
+
+    // Delete a follow-up
+    deleteFollowUp: async (followUpId: string) => {
+      return apiRequest(`/api/business/followups/${followUpId}`, {
+        method: 'DELETE',
       });
     },
   },
