@@ -30,6 +30,7 @@ import AdminPanelDashboard from "./AdminPanelDashboard";
 import AdminBusinessInquiries from "./AdminPanelDashboard/BusinessInquiries";
 import AdminPendingApprovals from "./AdminPanelDashboard/PendingApprovals";
 import AdminActiveBusinesses from "./AdminPanelDashboard/ActiveBusinesses";
+import AdminInvestmentInquiries from "./AdminPanelDashboard/AdminInquiries";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +64,7 @@ const App = () => (
           {/* Admin Panel Dashboard Routes */}
           <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminPanelDashboard /></AdminProtectedRoute>} />
           <Route path="/admin/dashboard/inquiries" element={<AdminProtectedRoute><AdminBusinessInquiries /></AdminProtectedRoute>} />
+          <Route path="/admin/dashboard/investment-inquiries" element={<AdminProtectedRoute><AdminInvestmentInquiries /></AdminProtectedRoute>} />
           <Route path="/admin/dashboard/approvals" element={<AdminProtectedRoute><AdminPendingApprovals /></AdminProtectedRoute>} />
           <Route path="/admin/dashboard/businesses" element={<AdminProtectedRoute><AdminActiveBusinesses /></AdminProtectedRoute>} />
 

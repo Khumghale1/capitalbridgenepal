@@ -466,11 +466,6 @@ export default function Register() {
   ];
 
   const fundingStages = [
-    "Pre-Seed",
-    "Seed",
-    "Series A",
-    "Series B",
-    "Series C+",
     "Growth Stage",
     "Operational",
     "Revenue Generating",
@@ -732,7 +727,7 @@ export default function Register() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="industry">Industry *</Label>
+                        <Label htmlFor="industry">Sector *</Label>
                         <Select
                           value={formData.industry}
                           onValueChange={(value) => {
@@ -1037,7 +1032,7 @@ export default function Register() {
                             </SelectContent>
                           </Select>
                         </div>
-                        <div className="space-y-2">
+                        {/* <div className="space-y-2">
                           <Label htmlFor="investmentSought">Investment Amount Sought (NPR) (Optional)</Label>
                           <Input
                             id="investmentSought"
@@ -1046,7 +1041,7 @@ export default function Register() {
                             value={formData.investmentSought}
                             onChange={(e) => handleInputChange("investmentSought", e.target.value)}
                           />
-                        </div>
+                        </div> */}
                       </div>
 
                       <div className="space-y-2">
@@ -1144,12 +1139,12 @@ export default function Register() {
                             <Input
                               id="expectedReturnOptions"
                               type="text"
-                              placeholder="15-20% annually"
+                              placeholder="i.e, IPO Upside or dividend"
                               value={formData.expectedReturnOptions}
                               onChange={(e) => handleInputChange("expectedReturnOptions", e.target.value)}
                             />
                             <p className="text-xs text-muted-foreground">
-                              Expected returns for investors (e.g., "15-20% annually")
+                              Expected returns for investors (i.e, IPO Upside or dividend")
                             </p>
                           </div>
                           <div className="space-y-2">
@@ -1696,7 +1691,7 @@ export default function Register() {
                   </div>
                   <div className="flex-1">
                     <h3 className="mb-1 text-lg font-semibold text-foreground">
-                      Registr Your Account For Free!!!
+                      Register Your Account For Free!!!
                     </h3>
                     <p className="text-sm text-muted-foreground">
                       Once approved, you'll receive Notification....

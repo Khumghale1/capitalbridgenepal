@@ -130,16 +130,41 @@ export const api = {
       });
     },
 
-    // Get all interests (Admin only)
-    getAll: async (params?: { page?: number; limit?: number }) => {
+    // Get all interests (Admin only) with filters
+    getAll: async (params?: {
+      page?: number;
+      limit?: number;
+      status?: 'NOT_CONTACTED' | 'INTERESTED' | 'NOT_INTERESTED';
+      source?: string;
+      businessId?: string;
+      search?: string;
+    }) => {
       const queryParams = new URLSearchParams();
       if (params?.page) queryParams.append('page', params.page.toString());
       if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.status) queryParams.append('status', params.status);
+      if (params?.source) queryParams.append('source', params.source);
+      if (params?.businessId) queryParams.append('businessId', params.businessId);
+      if (params?.search) queryParams.append('search', params.search);
 
       const query = queryParams.toString();
       const endpoint = query ? `/api/interests?${query}` : '/api/interests';
 
       return apiRequest(endpoint, {
+        method: 'GET',
+      });
+    },
+
+    // Get today's follow-ups (Admin only)
+    getTodayFollowUps: async () => {
+      return apiRequest('/api/interests/today', {
+        method: 'GET',
+      });
+    },
+
+    // Get all sources (Admin only)
+    getSources: async () => {
+      return apiRequest('/api/interests/sources', {
         method: 'GET',
       });
     },
@@ -160,8 +185,14 @@ export const api = {
       });
     },
 
-    // Update interest follow-up details (Admin only)
-    update: async (interestId: string, data: { contacted?: boolean; followUpRemarks?: string; businessId: string }) => {
+    // Update interest (Admin only)
+    update: async (interestId: string, data: {
+      contacted?: boolean;
+      followUpRemarks?: string;
+      businessId: string;
+      status?: 'NOT_CONTACTED' | 'INTERESTED' | 'NOT_INTERESTED';
+      source?: string;
+    }) => {
       return apiRequest(`/api/interests/${interestId}`, {
         method: 'PUT',
         body: JSON.stringify(data),
@@ -169,18 +200,18 @@ export const api = {
     },
 
     // Add a new follow-up to an interest (Admin only)
-    addFollowUp: async (interestId: string, remarks: string, businessId: string) => {
+    addFollowUp: async (interestId: string, remarks: string, businessId: string, nextFollowUpDate?: string | null) => {
       return apiRequest(`/api/interests/${interestId}/followups`, {
         method: 'POST',
-        body: JSON.stringify({ remarks, businessId }),
+        body: JSON.stringify({ remarks, businessId, nextFollowUpDate }),
       });
     },
 
     // Update a follow-up (Admin only)
-    updateFollowUp: async (followUpId: string, remarks: string, businessId: string) => {
+    updateFollowUp: async (followUpId: string, remarks: string, businessId: string, nextFollowUpDate?: string | null) => {
       return apiRequest(`/api/interests/followups/${followUpId}`, {
         method: 'PUT',
-        body: JSON.stringify({ remarks, businessId }),
+        body: JSON.stringify({ remarks, businessId, nextFollowUpDate }),
       });
     },
 
@@ -374,15 +405,29 @@ export const api = {
     },
 
     // Get investment inquiries for own business
-    getOwnInterests: async (params?: { page?: number; limit?: number }) => {
+    getOwnInterests: async (params?: {
+      page?: number;
+      limit?: number;
+      status?: 'NOT_CONTACTED' | 'INTERESTED' | 'NOT_INTERESTED';
+      source?: string;
+    }) => {
       const queryParams = new URLSearchParams();
       if (params?.page) queryParams.append('page', params.page.toString());
       if (params?.limit) queryParams.append('limit', params.limit.toString());
+      if (params?.status) queryParams.append('status', params.status);
+      if (params?.source) queryParams.append('source', params.source);
 
       const query = queryParams.toString();
       const endpoint = query ? `/api/business/interests?${query}` : '/api/business/interests';
 
       return apiRequest(endpoint, {
+        method: 'GET',
+      });
+    },
+
+    // Get interests with follow-ups due today
+    getTodayFollowUps: async () => {
+      return apiRequest('/api/business/interests/today', {
         method: 'GET',
       });
     },
@@ -403,8 +448,13 @@ export const api = {
       });
     },
 
-    // Update interest follow-up details
-    updateInterest: async (interestId: string, data: { contacted?: boolean; followUpRemarks?: string }) => {
+    // Update interest (status, source, contacted, remarks)
+    updateInterest: async (interestId: string, data: {
+      contacted?: boolean;
+      followUpRemarks?: string;
+      status?: 'NOT_CONTACTED' | 'INTERESTED' | 'NOT_INTERESTED';
+      source?: string;
+    }) => {
       return apiRequest(`/api/business/interests/${interestId}`, {
         method: 'PUT',
         body: JSON.stringify(data),
@@ -412,24 +462,46 @@ export const api = {
     },
 
     // Add a new follow-up to an interest
-    addFollowUp: async (interestId: string, remarks: string) => {
+    addFollowUp: async (interestId: string, remarks: string, nextFollowUpDate?: string | null) => {
       return apiRequest(`/api/business/interests/${interestId}/followups`, {
         method: 'POST',
-        body: JSON.stringify({ remarks }),
+        body: JSON.stringify({ remarks, nextFollowUpDate }),
       });
     },
 
     // Update a follow-up
-    updateFollowUp: async (followUpId: string, remarks: string) => {
+    updateFollowUp: async (followUpId: string, remarks: string, nextFollowUpDate?: string | null) => {
       return apiRequest(`/api/business/followups/${followUpId}`, {
         method: 'PUT',
-        body: JSON.stringify({ remarks }),
+        body: JSON.stringify({ remarks, nextFollowUpDate }),
       });
     },
 
     // Delete a follow-up
     deleteFollowUp: async (followUpId: string) => {
       return apiRequest(`/api/business/followups/${followUpId}`, {
+        method: 'DELETE',
+      });
+    },
+
+    // Get lead sources
+    getLeadSources: async () => {
+      return apiRequest('/api/business/lead-sources', {
+        method: 'GET',
+      });
+    },
+
+    // Add a custom lead source
+    addLeadSource: async (name: string) => {
+      return apiRequest('/api/business/lead-sources', {
+        method: 'POST',
+        body: JSON.stringify({ name }),
+      });
+    },
+
+    // Delete a custom lead source
+    deleteLeadSource: async (sourceId: string) => {
+      return apiRequest(`/api/business/lead-sources/${sourceId}`, {
         method: 'DELETE',
       });
     },

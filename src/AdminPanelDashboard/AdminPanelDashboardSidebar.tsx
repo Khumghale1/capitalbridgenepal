@@ -6,6 +6,7 @@ import {
   CheckCircle,
   MessageSquare,
   LogOut,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -14,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const navigation = [
   { name: "Overview", href: "/admin/dashboard", icon: LayoutDashboard },
   { name: "Business Inquiries", href: "/admin/dashboard/inquiries", icon: MessageSquare },
+  { name: "Investment CRM", href: "/admin/dashboard/investment-inquiries", icon: Users },
   { name: "Pending Approvals", href: "/admin/dashboard/approvals", icon: CheckCircle },
   { name: "Active Businesses", href: "/admin/dashboard/businesses", icon: Building2 },
 ];
