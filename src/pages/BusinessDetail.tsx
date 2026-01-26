@@ -40,6 +40,7 @@ interface Business {
   expectedReturnOptions?: string;
   paidUpCapital: number;
   yearEstablished: number;
+  ipoTimeHorizon?: string;
   businessType: string;
   teamSize: string;
   registrationNumber: string;
@@ -49,6 +50,10 @@ interface Business {
   growthPlans?: string;
   isFeatured?: boolean;
   status?: string;
+  mission?:string;
+  vision?:string;
+  minimumInvestmentUnits?:string;
+  maximumInvestmentUnits?:string;
 }
 
 interface BusinessMedia {
@@ -258,14 +263,10 @@ export default function BusinessDetail() {
             <div className="bg-white rounded-xl p-5 text-center shadow-sm border border-primary/20">
               <BarChart3 className="h-6 w-6 mx-auto mb-2 text-primary " />
               <p className="text-xs text-muted-foreground mb-1">Investment Range</p>
-              {/* <p className="text-sm font-bold text-primary">
-                {business.investmentCapacityMin && business.investmentCapacityMax
-                  ? formatInvestmentRange(business.investmentCapacityMin, business.investmentCapacityMax)
-                  : 'NPR 1 Lakhs - 10 Lakhs'}
-              </p> */}
               <p className="text-sm font-bold text-primary">
-                  NPR 1 Lakh - 10 Lakhs
+                 NPR {business.minimumInvestmentUnits} - NPR {business.maximumInvestmentUnits || 'Unlimited'}
               </p>
+             
             </div>
 
             {/* Entry Price */}
@@ -286,19 +287,19 @@ export default function BusinessDetail() {
               </p>
             </div>
 
-            {/* Expected Return */}
+            {/* Ipo time horizon */}
             <div className="bg-white rounded-xl p-5 text-center shadow-sm border-2 border-primary/20">
               <TrendingUp className="h-6 w-6 mx-auto mb-2 text-primary" />
-              <p className="text-xs text-muted-foreground mb-1">Expected Return</p>
-              <p className="text-sm font-bold text-primary">10X over 5 years</p>
+              <p className="text-xs text-muted-foreground mb-1">IPO Time Horizon</p>
+              <p className="text-sm font-bold text-primary">{business.ipoTimeHorizon} </p>
             </div>
 
             {/* Promoter Profile */}
             <div className="bg-white rounded-xl p-5 text-center shadow-sm col-span-2 md:col-span-1 border-2 border-primary/20">
               <Users className="h-6 w-6 mx-auto mb-2 text-primary" />
               <p className="text-xs text-muted-foreground mb-1">Promoter Profile</p>
-              {/* <p className="text-sm font-bold text-primary">{business.name}</p> */}
-              <p className="text-sm font-bold text-primary">Trade Tower Group</p>
+              <p className="text-sm font-bold text-primary">{business.name}</p>
+              {/* <p className="text-sm font-bold text-primary">Trade Tower Group</p> */}
             </div>
           </div>
 
@@ -313,8 +314,9 @@ export default function BusinessDetail() {
                     About {business.name}
                   </h2>
                   <p className="text-muted-foreground leading-relaxed">
-                    {business.fullDescription || business.briefDescription}
+                    {business.fullDescription }
                   </p>
+                   
                 </div>
 
                 {/* Mission Card */}
@@ -326,7 +328,7 @@ export default function BusinessDetail() {
                     <div>
                       <h3 className="font-bold text-foreground mb-2">Our Mission</h3>
                       <p className="text-sm text-muted-foreground">
-                        We invest in high-potential ventures, providing capital and strategic guidance to drive growth.
+                        {business.mission}
                       </p>
                     </div>
                   </div>
@@ -341,11 +343,16 @@ export default function BusinessDetail() {
                     <div>
                       <h3 className="font-bold text-foreground mb-2">Our Vision</h3>
                       <p className="text-sm text-muted-foreground">
-                        To be a trusted platform driving growth by partnering with entrepreneurs and institutions to shape Nepal's future.
+                        {business.vision}
                       </p>
                     </div>
                   </div>
                 </div>
+                <h2 className="text-xl font-bold text-foreground mb-4">Description</h2>
+
+                 <p className="text-muted-foreground leading-relaxed mt-2">
+                    {business.briefDescription }
+                  </p>
               </div>
             </div>
 
