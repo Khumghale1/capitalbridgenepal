@@ -24,7 +24,6 @@ import {
   LayoutDashboard,
   User,
   MessageSquare,
-  FolderOpen,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -34,7 +33,6 @@ const navigation = [
   { name: "Overview", href: "/business/dashboard", icon: LayoutDashboard },
   { name: "My Profile", href: "/business/dashboard/profile", icon: User },
   { name: "Investment Inquiries", href: "/business/dashboard/inquiries", icon: MessageSquare },
-  { name: "Materials & Media", href: "/business/dashboard/materials", icon: FolderOpen },
 ];
 
 export function BusinessDashboardHeader() {

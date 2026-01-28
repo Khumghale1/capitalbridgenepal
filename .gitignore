@@ -28,6 +28,8 @@ dist-ssr
 ./dist
 .dist
 .claude
+.claude
+
 
 # Docker
 Dockerfile

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
-import { BusinessCard } from "@/components/business/BusinessCard";
+// import { BusinessCard } from "@/components/business/BusinessCard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -21,6 +21,7 @@ interface Business {
   id: string;
   name: string;
   registrationNumber: string;
+  panNumber?: string;
   category: {
     id: number;
     name: string;
@@ -30,22 +31,27 @@ interface Business {
   yearEstablished: number;
   location: string;
   teamSize: string;
+  fundingStage?: string;
   paidUpCapital: number;
-  investmentCapacityMin: number;
-  investmentCapacityMax: number;
+  minimumInvestmentUnits?: number;
+  maximumInvestmentUnits?: number;
   pricePerUnit?: number;
   expectedReturnOptions?: string;
   estimatedMarketValuation?: number;
   ipoTimeHorizon?: string;
   briefDescription: string;
   fullDescription?: string;
+  vision?: string;
+  mission?: string;
   growthPlans?: string;
+  promoterProfile?: string;
   contactEmail: string;
   contactPhone: string;
+  address?: string;
   website?: string;
   facebookUrl?: string;
   linkedinUrl?: string;
-  twitterUrl?: string;
+  instagramUrl?: string;
   logoUrl?: string;
   viewCount: number;
   isFeatured: boolean;
@@ -100,6 +106,7 @@ export default function Businesses() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const response: any = await api.businesses.getAll();
       const businessData = response.businesses || [];
+
       setBusinesses(businessData);
 
       // Extract unique categories with counts
@@ -357,7 +364,7 @@ export default function Businesses() {
                       onClick={() => handleViewDetails(business)}
                       className="cursor-pointer transition-transform hover:scale-[1.02]"
                     >
-                      <InvestmentCard business={business} />
+                      {/* <InvestmentCard business={business} /> */}
                     </div>
                   ))}
                 </div>

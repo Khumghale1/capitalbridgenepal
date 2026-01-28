@@ -68,10 +68,13 @@ interface Business {
   businessType: string;
   yearEstablished: number;
   location: string;
+  address?: string;
   teamSize: string;
-  paidUpCapital: number;
-  investmentCapacityMin: number;
-  investmentCapacityMax: number;
+  promoterProfile?: string;
+  fundingStage?: string;
+  paidUpCapital?: string;
+  minimumInvestmentUnits?: number;
+  maximumInvestmentUnits?: number;
   pricePerUnit?: number;
   expectedReturnOptions?: string;
   estimatedMarketValuation?: number;
@@ -86,7 +89,7 @@ interface Business {
   website?: string;
   facebookUrl?: string;
   linkedinUrl?: string;
-  twitterUrl?: string;
+  instagramUrl?: string;
   logoUrl?: string;
   status: string;
   isActive: boolean;
@@ -674,7 +677,10 @@ export default function ActiveBusinesses() {
                           {business.isFeatured && <Badge variant="secondary">Featured</Badge>}
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          {business.category.name} • {business.location} • Seeking NPR {business.investmentCapacityMin.toLocaleString()} - {business.investmentCapacityMax.toLocaleString()}
+                          {business.category?.name || 'N/A'} • {business.location || 'N/A'}
+                          {(business.minimumInvestmentUnits || business.maximumInvestmentUnits) && (
+                            <> • Min: {business.minimumInvestmentUnits?.toLocaleString() || 'N/A'} - Max: {business.maximumInvestmentUnits?.toLocaleString() || 'N/A'} units</>
+                          )}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
                           {business.viewCount} views • Added {new Date(business.createdAt).toLocaleDateString()}
@@ -801,7 +807,7 @@ export default function ActiveBusinesses() {
                     <p className="text-sm font-medium">{selectedBusiness.location || "N/A"}</p>
                   </div>
                 </div>
-                {(selectedBusiness.facebookUrl || selectedBusiness.linkedinUrl || selectedBusiness.twitterUrl) && (
+                {(selectedBusiness.facebookUrl || selectedBusiness.linkedinUrl || selectedBusiness.instagramUrl) && (
                   <div className="mt-3">
                     <Label className="text-xs text-muted-foreground">Social Media</Label>
                     <div className="flex gap-2 mt-1">
@@ -815,9 +821,9 @@ export default function ActiveBusinesses() {
                           LinkedIn
                         </a>
                       )}
-                      {selectedBusiness.twitterUrl && (
-                        <a href={selectedBusiness.twitterUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
-                          Twitter
+                      {selectedBusiness.instagramUrl && (
+                        <a href={selectedBusiness.instagramUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
+                          Instagram
                         </a>
                       )}
                     </div>
@@ -854,12 +860,12 @@ export default function ActiveBusinesses() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-xs text-muted-foreground">Paid-Up Capital</Label>
-                    <p className="text-sm font-medium">NPR {selectedBusiness.paidUpCapital?.toLocaleString() || "N/A"}</p>
+                    <p className="text-sm font-medium">{selectedBusiness.paidUpCapital || "N/A"}</p>
                   </div>
                   <div>
-                    <Label className="text-xs text-muted-foreground">Investment Range</Label>
+                    <Label className="text-xs text-muted-foreground">Investment Units Range</Label>
                     <p className="text-sm font-medium">
-                      NPR {selectedBusiness.investmentCapacityMin?.toLocaleString() || "N/A"} - {selectedBusiness.investmentCapacityMax?.toLocaleString() || "N/A"}
+                      Min: {selectedBusiness.minimumInvestmentUnits?.toLocaleString() || "N/A"} - Max: {selectedBusiness.maximumInvestmentUnits?.toLocaleString() || "N/A"}
                     </p>
                   </div>
                   {selectedBusiness.pricePerUnit && (
@@ -998,29 +1004,28 @@ export default function ActiveBusinesses() {
               </div>
 
               <div>
-                <Label>Paid-Up Capital (NPR)</Label>
+                <Label>Paid-Up Capital</Label>
                 <Input
-                  type="number"
-                  value={editingBusiness.paidUpCapital}
-                  onChange={(e) => setEditingBusiness({ ...editingBusiness, paidUpCapital: parseFloat(e.target.value) })}
+                  value={editingBusiness.paidUpCapital || ''}
+                  onChange={(e) => setEditingBusiness({ ...editingBusiness, paidUpCapital: e.target.value })}
                 />
               </div>
 
               <div>
-                <Label>Investment Capacity Min (NPR)</Label>
+                <Label>Minimum Investment Units</Label>
                 <Input
                   type="number"
-                  value={editingBusiness.investmentCapacityMin}
-                  onChange={(e) => setEditingBusiness({ ...editingBusiness, investmentCapacityMin: parseFloat(e.target.value) })}
+                  value={editingBusiness.minimumInvestmentUnits || ''}
+                  onChange={(e) => setEditingBusiness({ ...editingBusiness, minimumInvestmentUnits: e.target.value ? parseInt(e.target.value) : undefined })}
                 />
               </div>
 
               <div>
-                <Label>Investment Capacity Max (NPR)</Label>
+                <Label>Maximum Investment Units</Label>
                 <Input
                   type="number"
-                  value={editingBusiness.investmentCapacityMax}
-                  onChange={(e) => setEditingBusiness({ ...editingBusiness, investmentCapacityMax: parseFloat(e.target.value) })}
+                  value={editingBusiness.maximumInvestmentUnits || ''}
+                  onChange={(e) => setEditingBusiness({ ...editingBusiness, maximumInvestmentUnits: e.target.value ? parseInt(e.target.value) : undefined })}
                 />
               </div>
 

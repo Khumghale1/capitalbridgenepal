@@ -35,6 +35,8 @@ import {
   X,
   Plus,
   Play,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { MediaType } from "@/types/media";
@@ -66,6 +68,10 @@ export default function Register() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState<string>("");
 
+  // Password visibility state
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   // Document files state
   const [documentFiles, setDocumentFiles] = useState<DocumentFile[]>([]);
   const [youtubeUrls, setYoutubeUrls] = useState<string[]>([]);
@@ -80,6 +86,7 @@ export default function Register() {
     industry: "",
     foundedYear: "",
     companySize: "",
+    promoterProfile: "",
 
     // Contact Information
     email: "",
@@ -92,9 +99,12 @@ export default function Register() {
     // Business Details
     description: "",
     fundingStage: "",
+    paidUpCapital: "",
     investmentSought: "",
     useOfFunds: "",
     revenueModel: "",
+    vision: "",
+    mission: "",
 
     // Investment Parameters
     minimumInvestmentUnits: "",
@@ -107,7 +117,7 @@ export default function Register() {
     // Social Media
     linkedin: "",
     facebook: "",
-    twitter: "",
+    instagram: "",
 
     // Authentication
     password: "",
@@ -225,7 +235,7 @@ export default function Register() {
       case "website":
       case "linkedin":
       case "facebook":
-      case "twitter":
+      case "instagram":
         error = validateURL(value as string);
         break;
       case "password":
@@ -363,7 +373,12 @@ export default function Register() {
         uploadedCount++;
         setUploadProgress(Math.round((uploadedCount / totalItems) * 100));
       } catch (error) {
-        console.error('Failed to add YouTube video:', error);
+        console.error('Failed to add YouTube video:', url, error);
+        toast({
+          title: "YouTube Upload Failed",
+          description: `Failed to upload YouTube video: ${url}`,
+          variant: "destructive",
+        });
         // Continue with other videos even if one fails
       }
     }
@@ -469,6 +484,20 @@ export default function Register() {
     "Growth Stage",
     "Operational",
     "Revenue Generating",
+    "Pre-IPO / Late-Stage Funding",
+    "Pre-Seed Stage",
+    "Initial Public Offering (IPO)",
+  ];
+
+  const paidUpCapitalOptions = [
+    "Under 5 Lakhs",
+    "5-10 Lakhs",
+    "10-25 Lakhs",
+    "25-50 Lakhs",
+    "50 Lakhs - 1 Crore",
+    "1-5 Crores",
+    "5-10 Crores",
+    "Above 10 Crores",
   ];
 
   const companySizes = [
@@ -526,9 +555,9 @@ export default function Register() {
         const urlError = validateURL(formData.facebook);
         if (urlError) newErrors.facebook = urlError;
       }
-      if (formData.twitter) {
-        const urlError = validateURL(formData.twitter);
-        if (urlError) newErrors.twitter = urlError;
+      if (formData.instagram) {
+        const urlError = validateURL(formData.instagram);
+        if (urlError) newErrors.instagram = urlError;
       }
     } else if (tab === "business") {
       if (!formData.description.trim()) {
@@ -795,6 +824,19 @@ export default function Register() {
                         </Select>
                       </div>
 
+                      <div className="space-y-2">
+                        <Label htmlFor="promoterProfile">Promoter Profile (Optional)</Label>
+                        <Input
+                          id="promoterProfile"
+                          placeholder="e.g., ABC Group, XYZ Holdings"
+                          value={formData.promoterProfile}
+                          onChange={(e) => handleInputChange("promoterProfile", e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Name of the parent company or main influential organization
+                        </p>
+                      </div>
+
                       <div className="flex justify-end">
                         <Button type="button" onClick={() => nextTab("contact")} variant="hero">
                           Next: Contact Information
@@ -951,19 +993,19 @@ export default function Register() {
                             )}
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="twitter" className="text-sm text-muted-foreground">
-                              Twitter/X Profile
+                            <Label htmlFor="instagram" className="text-sm text-muted-foreground">
+                              Instagram Profile
                             </Label>
                             <Input
-                              id="twitter"
-                              placeholder="https://twitter.com/..."
-                              value={formData.twitter}
-                              onChange={(e) => handleInputChange("twitter", e.target.value)}
-                              onBlur={(e) => validateField("twitter", e.target.value)}
-                              className={errors.twitter ? "border-red-500" : ""}
+                              id="instagram"
+                              placeholder="https://instagram.com/..."
+                              value={formData.instagram}
+                              onChange={(e) => handleInputChange("instagram", e.target.value)}
+                              onBlur={(e) => validateField("instagram", e.target.value)}
+                              className={errors.instagram ? "border-red-500" : ""}
                             />
-                            {errors.twitter && (
-                              <p className="text-sm text-red-500">{errors.twitter}</p>
+                            {errors.instagram && (
+                              <p className="text-sm text-red-500">{errors.instagram}</p>
                             )}
                           </div>
                         </div>
@@ -1032,16 +1074,25 @@ export default function Register() {
                             </SelectContent>
                           </Select>
                         </div>
-                        {/* <div className="space-y-2">
-                          <Label htmlFor="investmentSought">Investment Amount Sought (NPR) (Optional)</Label>
-                          <Input
-                            id="investmentSought"
-                            type="number"
-                            placeholder="5000000"
-                            value={formData.investmentSought}
-                            onChange={(e) => handleInputChange("investmentSought", e.target.value)}
-                          />
-                        </div> */}
+
+                        <div className="space-y-2">
+                          <Label htmlFor="paidUpCapital">Paid Up Capital (Optional)</Label>
+                          <Select
+                            value={formData.paidUpCapital}
+                            onValueChange={(value) => handleInputChange("paidUpCapital", value)}
+                          >
+                            <SelectTrigger id="paidUpCapital">
+                              <SelectValue placeholder="Select capital range" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {paidUpCapitalOptions.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
 
                       <div className="space-y-2">
@@ -1064,6 +1115,34 @@ export default function Register() {
                           value={formData.revenueModel}
                           onChange={(e) => handleInputChange("revenueModel", e.target.value)}
                         />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="vision">Company Vision (Optional)</Label>
+                        <Textarea
+                          id="vision"
+                          placeholder="Describe your company's long-term vision and aspirations..."
+                          rows={4}
+                          value={formData.vision}
+                          onChange={(e) => handleInputChange("vision", e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          What does your company aspire to achieve in the future?
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="mission">Company Mission (Optional)</Label>
+                        <Textarea
+                          id="mission"
+                          placeholder="Describe your company's mission and purpose..."
+                          rows={4}
+                          value={formData.mission}
+                          onChange={(e) => handleInputChange("mission", e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          What is your company's core purpose and how do you serve your customers?
+                        </p>
                       </div>
 
                       {/* Investment Parameters Section */}
@@ -1554,17 +1633,30 @@ export default function Register() {
                       <div className="grid gap-6 sm:grid-cols-2">
                         <div className="space-y-2">
                           <Label htmlFor="password">Password *</Label>
-                          <Input
-                            id="password"
-                            type="password"
-                            placeholder="Create a strong password"
-                            value={formData.password}
-                            onChange={(e) => handleInputChange("password", e.target.value)}
-                            onBlur={(e) => validateField("password", e.target.value)}
-                            required
-                            minLength={8}
-                            className={errors.password ? "border-red-500" : ""}
-                          />
+                          <div className="relative">
+                            <Input
+                              id="password"
+                              type={showPassword ? "text" : "password"}
+                              placeholder="Create a strong password"
+                              value={formData.password}
+                              onChange={(e) => handleInputChange("password", e.target.value)}
+                              onBlur={(e) => validateField("password", e.target.value)}
+                              required
+                              minLength={8}
+                              className={errors.password ? "border-red-500 pr-10" : "pr-10"}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              {showPassword ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
                           {errors.password && (
                             <p className="text-sm text-red-500">{errors.password}</p>
                           )}
@@ -1574,17 +1666,30 @@ export default function Register() {
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="confirmPassword">Confirm Password *</Label>
-                          <Input
-                            id="confirmPassword"
-                            type="password"
-                            placeholder="Re-enter your password"
-                            value={formData.confirmPassword}
-                            onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                            onBlur={(e) => validateField("confirmPassword", e.target.value)}
-                            required
-                            minLength={8}
-                            className={errors.confirmPassword ? "border-red-500" : ""}
-                          />
+                          <div className="relative">
+                            <Input
+                              id="confirmPassword"
+                              type={showConfirmPassword ? "text" : "password"}
+                              placeholder="Re-enter your password"
+                              value={formData.confirmPassword}
+                              onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                              onBlur={(e) => validateField("confirmPassword", e.target.value)}
+                              required
+                              minLength={8}
+                              className={errors.confirmPassword ? "border-red-500 pr-10" : "pr-10"}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              {showConfirmPassword ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </button>
+                          </div>
                           {errors.confirmPassword && (
                             <p className="text-sm text-red-500">{errors.confirmPassword}</p>
                           )}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { AdminPanelDashboardLayout } from "./AdminPanelDashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,16 @@ import {
   Search,
   ArrowLeft,
   Users,
+  Filter,
 } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -154,6 +163,9 @@ export default function AdminInquiries() {
   // Expanded rows for follow-ups
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
+  // Source filter
+  const [sourceFilter, setSourceFilter] = useState<string>("all");
+
   // Today's follow-ups count
   const [todayFollowUpsCount, setTodayFollowUpsCount] = useState(0);
 
@@ -263,10 +275,14 @@ export default function AdminInquiries() {
     return interests.filter((i) => i.business.id === selectedBusiness.id);
   }, [interests, selectedBusiness]);
 
-  // Filter by status tab
+  // Filter by status tab and source
   const filteredInterests = useMemo(() => {
-    return businessInterests.filter((i) => i.status === activeTab);
-  }, [businessInterests, activeTab]);
+    return businessInterests.filter((i) => {
+      const statusMatch = i.status === activeTab;
+      const sourceMatch = sourceFilter === "all" || i.source === sourceFilter;
+      return statusMatch && sourceMatch;
+    });
+  }, [businessInterests, activeTab, sourceFilter]);
 
   // Status counts for selected business
   const businessStatusCounts = useMemo(() => {
@@ -293,6 +309,8 @@ export default function AdminInquiries() {
   const handleBackToGrid = () => {
     setSelectedBusiness(null);
     setBusinessSearch("");
+    setSourceFilter("all");
+    setExpandedRows(new Set());
   };
 
   const handleStatusChange = async (interest: Interest, newStatus: InterestStatus) => {
@@ -375,6 +393,7 @@ export default function AdminInquiries() {
     setNewFollowUpRemarks("");
     setNewFollowUpDate(undefined);
     setAddFollowUpOpen(true);
+    setExpandedRows((prev) => new Set(prev).add(interest.id));
   };
 
   const handleAddFollowUp = async () => {
@@ -629,74 +648,345 @@ export default function AdminInquiries() {
     });
   };
 
-  // Open inquiry detail modal
-  const openInquiryDetail = (interest: Interest) => {
-    setSelectedInterest(interest);
-    setExpandedRows(new Set([interest.id])); // Auto-expand follow-ups
-  };
-
-  // Close inquiry detail modal
-  const closeInquiryDetail = () => {
-    setSelectedInterest(null);
-  };
-
-  // Render compact inquiry card for grid
-  const renderInquiryGridCard = (interest: Interest) => {
+  // Render mobile card view
+  const renderMobileCard = (interest: Interest) => {
+    const isExpanded = expandedRows.has(interest.id);
     const isTodayAction = hasTodayFollowUp(interest);
-    const nextFollowUp = interest.followUps.find(
-      (f) => f.nextFollowUpDate && isToday(parseISO(f.nextFollowUpDate))
-    );
 
     return (
       <Card
         key={interest.id}
         className={cn(
-          "cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02] hover:border-primary",
-          isTodayAction && "ring-2 ring-yellow-400"
+          "mb-4 transition-all",
+          isTodayAction && "ring-2 ring-yellow-400 bg-yellow-50/50 dark:bg-yellow-900/10"
         )}
-        onClick={() => openInquiryDetail(interest)}
       >
-        <CardContent className="p-4 flex flex-col items-center text-center">
-          {/* User Avatar */}
-          <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-3 border-2 border-primary/20">
-            <User className="h-7 w-7 text-primary" />
-          </div>
-
-          {/* Name */}
-          <h3 className="font-semibold text-sm mb-1 line-clamp-1">{interest.investorName}</h3>
-
-          {/* Contact Info */}
-          <div className="text-xs text-muted-foreground space-y-0.5 mb-2 w-full">
-            <p className="flex items-center justify-center gap-1 truncate">
-              <Mail className="h-3 w-3 flex-shrink-0" />
-              <span className="truncate">{interest.email}</span>
-            </p>
-            <p className="flex items-center justify-center gap-1">
-              <Phone className="h-3 w-3 flex-shrink-0" />
-              {interest.phoneNumber}
-            </p>
-          </div>
-
-          {/* Status Badge */}
-          <Badge className={cn("text-xs mb-2", STATUS_CONFIG[interest.status].color)}>
-            {STATUS_CONFIG[interest.status].label}
-          </Badge>
-
-          {/* Follow-ups count and today indicator */}
-          <div className="flex items-center gap-1 flex-wrap justify-center">
-            <Badge variant="outline" className="text-xs px-1.5 py-0">
-              <Clock className="h-2.5 w-2.5 mr-1" />
-              {interest.followUps.length} follow-up{interest.followUps.length !== 1 ? "s" : ""}
+        <CardContent className="p-4">
+          {/* Today's Action Badge */}
+          {isTodayAction && (
+            <Badge className="mb-2 bg-yellow-500 text-white">
+              <Bell className="h-3 w-3 mr-1" />
+              Today's Action
             </Badge>
-            {isTodayAction && (
-              <Badge className="bg-yellow-500 text-xs px-1.5 py-0">
-                <Bell className="h-2.5 w-2.5 mr-0.5" />
-                Today
-              </Badge>
+          )}
+
+          {/* Header with name and status */}
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <span className="font-semibold">{interest.investorName}</span>
+            </div>
+            <Select
+              value={interest.status}
+              onValueChange={(value) => handleStatusChange(interest, value as InterestStatus)}
+              disabled={updatingId === interest.id}
+            >
+              <SelectTrigger className={cn("w-[140px] h-8 text-xs", STATUS_CONFIG[interest.status].color)}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="NOT_CONTACTED">Not Contacted</SelectItem>
+                <SelectItem value="INTERESTED">Interested</SelectItem>
+                <SelectItem value="NOT_INTERESTED">Not Interested</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Contact info */}
+          <div className="space-y-2 text-sm text-muted-foreground mb-3">
+            <div className="flex items-center gap-2">
+              <Mail className="h-4 w-4" />
+              <a href={`mailto:${interest.email}`} className="hover:underline">
+                {interest.email}
+              </a>
+            </div>
+            <div className="flex items-center gap-2">
+              <Phone className="h-4 w-4" />
+              <a href={`tel:${interest.phoneNumber}`} className="hover:underline">
+                {interest.phoneNumber}
+              </a>
+            </div>
+          </div>
+
+          {/* Message */}
+          {interest.message && (
+            <p className="text-sm bg-muted/50 p-2 rounded mb-3 line-clamp-2">{interest.message}</p>
+          )}
+
+          {/* Source */}
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xs text-muted-foreground">Source:</span>
+            <Select
+              value={interest.source}
+              onValueChange={(value) => handleSourceChange(interest, value)}
+              disabled={updatingId === interest.id}
+            >
+              <SelectTrigger className="h-7 text-xs w-[130px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {sources.map((source) => (
+                  <SelectItem key={source} value={source}>
+                    {source}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Follow-ups section */}
+          <div className="border-t pt-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full justify-between mb-2"
+              onClick={() => toggleRowExpanded(interest.id)}
+            >
+              <span className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Follow-ups ({interest.followUps.length})
+              </span>
+              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+
+            {isExpanded && (
+              <div className="space-y-2 mb-3">
+                {interest.followUps.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-2">No follow-ups yet</p>
+                ) : (
+                  interest.followUps.map((followUp) => (
+                    <div
+                      key={followUp.id}
+                      className={cn(
+                        "bg-muted/50 p-3 rounded-lg text-sm",
+                        followUp.nextFollowUpDate &&
+                          isToday(parseISO(followUp.nextFollowUpDate)) &&
+                          "bg-yellow-100 dark:bg-yellow-900/30"
+                      )}
+                    >
+                      <div className="flex justify-between items-start mb-1">
+                        <Badge variant="outline" className="text-xs">
+                          #{followUp.followUpNumber}
+                        </Badge>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => openEditFollowUpDialog(followUp, interest)}
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-destructive"
+                            onClick={() => openDeleteFollowUpDialog(followUp, interest)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      <p className="text-sm mb-1">{followUp.remarks}</p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>Created: {format(parseISO(followUp.createdAt), "dd MMM yyyy")}</span>
+                        {followUp.nextFollowUpDate && (
+                          <Badge
+                            variant={
+                              isToday(parseISO(followUp.nextFollowUpDate)) ? "default" : "secondary"
+                            }
+                            className="text-xs"
+                          >
+                            <Calendar className="h-3 w-3 mr-1" />
+                            {format(parseISO(followUp.nextFollowUpDate), "dd MMM yyyy")}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => openAddFollowUpDialog(interest)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Follow-up
+            </Button>
           </div>
         </CardContent>
       </Card>
+    );
+  };
+
+  // Render desktop table row
+  const renderTableRow = (interest: Interest) => {
+    const isExpanded = expandedRows.has(interest.id);
+    const isTodayAction = hasTodayFollowUp(interest);
+
+    return (
+      <React.Fragment key={interest.id}>
+        <TableRow
+          className={cn(
+            isTodayAction && "bg-yellow-50 dark:bg-yellow-900/10 hover:bg-yellow-100 dark:hover:bg-yellow-900/20"
+          )}
+        >
+          <TableCell>
+            {isTodayAction && (
+              <Badge className="bg-yellow-500 text-white mb-1">
+                <Bell className="h-3 w-3 mr-1" />
+                Today
+              </Badge>
+            )}
+            <div className="font-medium">{interest.investorName}</div>
+            <div className="text-xs text-muted-foreground">
+              {format(parseISO(interest.submittedAt), "dd MMM yyyy")}
+            </div>
+          </TableCell>
+          <TableCell>
+            <div className="flex items-center gap-1">
+              <Mail className="h-3 w-3 text-muted-foreground" />
+              <a href={`mailto:${interest.email}`} className="hover:underline text-sm">
+                {interest.email}
+              </a>
+            </div>
+            <div className="flex items-center gap-1 mt-1">
+              <Phone className="h-3 w-3 text-muted-foreground" />
+              <a href={`tel:${interest.phoneNumber}`} className="hover:underline text-sm">
+                {interest.phoneNumber}
+              </a>
+            </div>
+          </TableCell>
+          <TableCell className="max-w-[200px]">
+            <p className="truncate text-sm" title={interest.message || ""}>
+              {interest.message || "-"}
+            </p>
+          </TableCell>
+          <TableCell>
+            <Select
+              value={interest.source}
+              onValueChange={(value) => handleSourceChange(interest, value)}
+              disabled={updatingId === interest.id}
+            >
+              <SelectTrigger className="w-[130px] h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {sources.map((source) => (
+                  <SelectItem key={source} value={source}>
+                    {source}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </TableCell>
+          <TableCell>
+            <Select
+              value={interest.status}
+              onValueChange={(value) => handleStatusChange(interest, value as InterestStatus)}
+              disabled={updatingId === interest.id}
+            >
+              <SelectTrigger className={cn("w-[140px] h-8 text-xs", STATUS_CONFIG[interest.status].color)}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="NOT_CONTACTED">Not Contacted</SelectItem>
+                <SelectItem value="INTERESTED">Interested</SelectItem>
+                <SelectItem value="NOT_INTERESTED">Not Interested</SelectItem>
+              </SelectContent>
+            </Select>
+          </TableCell>
+          <TableCell>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => toggleRowExpanded(interest.id)}
+              className="text-xs"
+            >
+              {interest.followUps.length} Follow-ups
+              {isExpanded ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
+            </Button>
+          </TableCell>
+          <TableCell>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => openAddFollowUpDialog(interest)}
+              title="Add Follow-up"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </TableCell>
+        </TableRow>
+
+        {/* Expanded follow-ups row */}
+        {isExpanded && (
+          <TableRow className="bg-muted/30">
+            <TableCell colSpan={7} className="p-4">
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm mb-3">Follow-up History</h4>
+                {interest.followUps.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No follow-ups recorded yet</p>
+                ) : (
+                  <div className="grid gap-2">
+                    {interest.followUps.map((followUp) => (
+                      <div
+                        key={followUp.id}
+                        className={cn(
+                          "flex items-start justify-between bg-background p-3 rounded-lg border",
+                          followUp.nextFollowUpDate &&
+                            isToday(parseISO(followUp.nextFollowUpDate)) &&
+                            "border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20"
+                        )}
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="outline">#{followUp.followUpNumber}</Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {format(parseISO(followUp.createdAt), "dd MMM yyyy, HH:mm")}
+                            </span>
+                            {followUp.nextFollowUpDate && (
+                              <Badge
+                                variant={isToday(parseISO(followUp.nextFollowUpDate)) ? "default" : "secondary"}
+                              >
+                                <Calendar className="h-3 w-3 mr-1" />
+                                Next: {format(parseISO(followUp.nextFollowUpDate), "dd MMM yyyy")}
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-sm">{followUp.remarks}</p>
+                        </div>
+                        <div className="flex gap-1 ml-4">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => openEditFollowUpDialog(followUp, interest)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => openDeleteFollowUpDialog(followUp, interest)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </TableCell>
+          </TableRow>
+        )}
+      </React.Fragment>
     );
   };
 
@@ -937,62 +1227,104 @@ export default function AdminInquiries() {
 
           {/* DETAIL VIEW - Business Inquiries */}
           {selectedBusiness && (
-            <Card>
-              <CardHeader className="pb-0">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div>
-                    <CardTitle>Investment Inquiries</CardTitle>
-                    <CardDescription>Manage leads for {selectedBusiness.name}</CardDescription>
-                  </div>
-                  <Button onClick={downloadCSV} variant="outline" className="gap-2">
-                    <Download className="h-4 w-4" />
-                    Export CSV
-                  </Button>
+            <>
+              {/* Filters and Actions */}
+              <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                <div className="flex items-center gap-2 flex-1">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Filter by source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Sources</SelectItem>
+                      {sources.map((source) => (
+                        <SelectItem key={source} value={source}>
+                          {source}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as InterestStatus)}>
-                  <TabsList className="grid w-full grid-cols-3 mb-4">
-                    <TabsTrigger value="NOT_CONTACTED" className="text-xs sm:text-sm">
-                      Not Contacted
-                      <Badge variant="secondary" className="ml-2 hidden sm:inline-flex">
-                        {businessStatusCounts.NOT_CONTACTED}
-                      </Badge>
-                    </TabsTrigger>
-                    <TabsTrigger value="INTERESTED" className="text-xs sm:text-sm">
-                      Interested
-                      <Badge variant="secondary" className="ml-2 hidden sm:inline-flex">
-                        {businessStatusCounts.INTERESTED}
-                      </Badge>
-                    </TabsTrigger>
-                    <TabsTrigger value="NOT_INTERESTED" className="text-xs sm:text-sm">
-                      Not Interested
-                      <Badge variant="secondary" className="ml-2 hidden sm:inline-flex">
-                        {businessStatusCounts.NOT_INTERESTED}
-                      </Badge>
-                    </TabsTrigger>
-                  </TabsList>
 
-                  {["NOT_CONTACTED", "INTERESTED", "NOT_INTERESTED"].map((status) => (
-                    <TabsContent key={status} value={status}>
-                      {filteredInterests.length === 0 ? (
-                        <div className="text-center py-12">
-                          <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-20" />
-                          <p className="text-muted-foreground font-medium">No inquiries in this category</p>
-                          <p className="text-sm text-muted-foreground mt-2">
-                            Leads will appear here when their status matches this tab
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                          {filteredInterests.map(renderInquiryGridCard)}
-                        </div>
-                      )}
-                    </TabsContent>
-                  ))}
-                </Tabs>
-              </CardContent>
-            </Card>
+                <Button onClick={downloadCSV} variant="outline" className="gap-2">
+                  <Download className="h-4 w-4" />
+                  <span className="hidden sm:inline">Export CSV</span>
+                </Button>
+              </div>
+
+              <Card>
+                <CardHeader className="pb-0">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <CardTitle>Lead Management</CardTitle>
+                      <CardDescription>Track and manage investment leads for {selectedBusiness.name}</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as InterestStatus)}>
+                    <TabsList className="grid w-full grid-cols-3 mb-4">
+                      <TabsTrigger value="NOT_CONTACTED" className="text-xs sm:text-sm">
+                        Not Contacted
+                        <Badge variant="secondary" className="ml-2 hidden sm:inline-flex">
+                          {businessStatusCounts.NOT_CONTACTED}
+                        </Badge>
+                      </TabsTrigger>
+                      <TabsTrigger value="INTERESTED" className="text-xs sm:text-sm">
+                        Interested
+                        <Badge variant="secondary" className="ml-2 hidden sm:inline-flex">
+                          {businessStatusCounts.INTERESTED}
+                        </Badge>
+                      </TabsTrigger>
+                      <TabsTrigger value="NOT_INTERESTED" className="text-xs sm:text-sm">
+                        Not Interested
+                        <Badge variant="secondary" className="ml-2 hidden sm:inline-flex">
+                          {businessStatusCounts.NOT_INTERESTED}
+                        </Badge>
+                      </TabsTrigger>
+                    </TabsList>
+
+                    {["NOT_CONTACTED", "INTERESTED", "NOT_INTERESTED"].map((status) => (
+                      <TabsContent key={status} value={status}>
+                        {filteredInterests.length === 0 ? (
+                          <div className="text-center py-12">
+                            <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-20" />
+                            <p className="text-muted-foreground font-medium">No inquiries in this category</p>
+                            <p className="text-sm text-muted-foreground mt-2">
+                              Leads will appear here when their status matches this tab
+                            </p>
+                          </div>
+                        ) : (
+                          <>
+                            {/* Mobile View - Cards */}
+                            <div className="block lg:hidden">{filteredInterests.map(renderMobileCard)}</div>
+
+                            {/* Desktop View - Table */}
+                            <div className="hidden lg:block overflow-x-auto">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead className="min-w-[140px]">Name</TableHead>
+                                    <TableHead className="min-w-[200px]">Contact</TableHead>
+                                    <TableHead className="min-w-[180px]">Message</TableHead>
+                                    <TableHead className="min-w-[140px]">Source</TableHead>
+                                    <TableHead className="min-w-[150px]">Status</TableHead>
+                                    <TableHead className="min-w-[120px]">Follow-ups</TableHead>
+                                    <TableHead className="min-w-[60px]">Action</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>{filteredInterests.map(renderTableRow)}</TableBody>
+                              </Table>
+                            </div>
+                          </>
+                        )}
+                      </TabsContent>
+                    ))}
+                  </Tabs>
+                </CardContent>
+              </Card>
+            </>
           )}
         </>
       )}
@@ -1152,191 +1484,6 @@ export default function AdminInquiries() {
         </DialogContent>
       </Dialog>
 
-      {/* Inquiry Detail Modal */}
-      <Dialog open={selectedInterest !== null && !addFollowUpOpen && !editFollowUpOpen && !deleteFollowUpOpen} onOpenChange={(open) => !open && closeInquiryDetail()}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          {selectedInterest && (
-            <>
-              <DialogHeader>
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border-2 border-primary/20">
-                    <User className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <DialogTitle className="text-xl">{selectedInterest.investorName}</DialogTitle>
-                    <DialogDescription>
-                      Submitted on {format(parseISO(selectedInterest.submittedAt), "dd MMM yyyy, hh:mm a")}
-                    </DialogDescription>
-                  </div>
-                </div>
-              </DialogHeader>
-
-              <div className="space-y-4 py-4">
-                {/* Contact Info */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Email</p>
-                      <a href={`mailto:${selectedInterest.email}`} className="text-sm font-medium hover:underline">
-                        {selectedInterest.email}
-                      </a>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Phone</p>
-                      <a href={`tel:${selectedInterest.phoneNumber}`} className="text-sm font-medium hover:underline">
-                        {selectedInterest.phoneNumber}
-                      </a>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Message */}
-                {selectedInterest.message && (
-                  <div className="p-3 bg-muted/50 rounded-lg">
-                    <p className="text-xs text-muted-foreground mb-1">Message</p>
-                    <p className="text-sm">{selectedInterest.message}</p>
-                  </div>
-                )}
-
-                {/* Source & Status Controls */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Lead Source</label>
-                    <Select
-                      value={selectedInterest.source}
-                      onValueChange={(value) => {
-                        handleSourceChange(selectedInterest, value);
-                        setSelectedInterest({ ...selectedInterest, source: value });
-                      }}
-                      disabled={updatingId === selectedInterest.id}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {sources.map((source) => (
-                          <SelectItem key={source} value={source}>
-                            {source}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">Status</label>
-                    <Select
-                      value={selectedInterest.status}
-                      onValueChange={(value) => {
-                        handleStatusChange(selectedInterest, value as InterestStatus);
-                        setSelectedInterest({ ...selectedInterest, status: value as InterestStatus });
-                      }}
-                      disabled={updatingId === selectedInterest.id}
-                    >
-                      <SelectTrigger className={cn("w-full", STATUS_CONFIG[selectedInterest.status].color)}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="NOT_CONTACTED">Not Contacted</SelectItem>
-                        <SelectItem value="INTERESTED">Interested</SelectItem>
-                        <SelectItem value="NOT_INTERESTED">Not Interested</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Follow-ups Section */}
-                <div className="border-t pt-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-semibold flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      Follow-ups ({selectedInterest.followUps.length})
-                    </h4>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openAddFollowUpDialog(selectedInterest)}
-                    >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add
-                    </Button>
-                  </div>
-
-                  <div className="space-y-2 max-h-[250px] overflow-y-auto">
-                    {selectedInterest.followUps.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4">No follow-ups yet</p>
-                    ) : (
-                      selectedInterest.followUps.map((followUp) => (
-                        <div
-                          key={followUp.id}
-                          className={cn(
-                            "bg-muted/50 p-3 rounded-lg text-sm",
-                            followUp.nextFollowUpDate &&
-                              isToday(parseISO(followUp.nextFollowUpDate)) &&
-                              "bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300"
-                          )}
-                        >
-                          <div className="flex justify-between items-start mb-1">
-                            <Badge variant="outline" className="text-xs">
-                              #{followUp.followUpNumber}
-                            </Badge>
-                            <div className="flex gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openEditFollowUpDialog(followUp, selectedInterest);
-                                }}
-                              >
-                                <Pencil className="h-3 w-3" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 text-destructive"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openDeleteFollowUpDialog(followUp, selectedInterest);
-                                }}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                          <p className="text-sm mb-2">{followUp.remarks}</p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                            <span>Created: {format(parseISO(followUp.createdAt), "dd MMM yyyy")}</span>
-                            {followUp.nextFollowUpDate && (
-                              <Badge
-                                variant={isToday(parseISO(followUp.nextFollowUpDate)) ? "default" : "secondary"}
-                                className="text-xs"
-                              >
-                                <Calendar className="h-3 w-3 mr-1" />
-                                {format(parseISO(followUp.nextFollowUpDate), "dd MMM yyyy")}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <DialogFooter>
-                <Button variant="outline" onClick={closeInquiryDetail}>
-                  Close
-                </Button>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
     </AdminPanelDashboardLayout>
   );
 }

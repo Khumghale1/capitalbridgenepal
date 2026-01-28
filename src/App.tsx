@@ -22,7 +22,6 @@ import NotFound from "./pages/NotFound";
 import BusinessDashboard from "./BusinessDashboard";
 import BusinessProfile from "./BusinessDashboard/Profile";
 import BusinessInquiries from "./BusinessDashboard/InvestmentInquiries";
-import BusinessMaterials from "./BusinessDashboard/Materials";
 import BusinessSettings from "./BusinessDashboard/Settings";
 
 // Admin Panel Dashboard
@@ -58,7 +57,6 @@ const App = () => (
           <Route path="/business/dashboard" element={<BusinessProtectedRoute><BusinessDashboard /></BusinessProtectedRoute>} />
           <Route path="/business/dashboard/profile" element={<BusinessProtectedRoute><BusinessProfile /></BusinessProtectedRoute>} />
           <Route path="/business/dashboard/inquiries" element={<BusinessProtectedRoute><BusinessInquiries /></BusinessProtectedRoute>} />
-          <Route path="/business/dashboard/materials" element={<BusinessProtectedRoute><BusinessMaterials /></BusinessProtectedRoute>} />
           <Route path="/business/dashboard/settings" element={<BusinessProtectedRoute><BusinessSettings /></BusinessProtectedRoute>} />
 
           {/* Admin Panel Dashboard Routes */}
