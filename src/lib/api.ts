@@ -240,6 +240,14 @@ export const api = {
       });
     },
 
+    // Get all categories
+    getCategories: async () => {
+      return apiRequest('/api/businesses/categories', {
+        method: 'GET',
+        headers: { 'skip-auth': 'true' }, // Public endpoint
+      });
+    },
+
     // Admin endpoints
     getPending: async (params?: { page?: number; limit?: number }) => {
       const queryParams = new URLSearchParams();

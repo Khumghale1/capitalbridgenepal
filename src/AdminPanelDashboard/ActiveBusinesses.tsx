@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from "react";
 import { AdminPanelDashboardLayout } from "./AdminPanelDashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, Edit, Ban, Search, Eye, Loader2, CheckCircle, AlertCircle, Mail, MessageSquare, Download, Plus, Pencil, Trash2 } from "lucide-react";
+import { Building2, Edit, Ban, Search, Eye, Loader2, CheckCircle, AlertCircle, MessageSquare, Download, Plus, Pencil, Trash2, Briefcase, FileText, Upload } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -37,13 +38,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
 
 interface BusinessMedia {
@@ -129,6 +124,60 @@ interface Interest {
   followUps: FollowUp[];
 }
 
+// Constants for dropdown options
+const industries = [
+  "Technology",
+  "Agriculture",
+  "Manufacturing",
+  "Tourism & Hospitality",
+  "Healthcare",
+  "Education",
+  "Financial Services",
+  "Retail & E-commerce",
+  "Real Estate",
+  "Energy & Renewable",
+  "Investment",
+  "Food & Beverage",
+  "Other",
+];
+
+const fundingStages = [
+  "Growth Stage",
+  "Operational",
+  "Revenue Generating",
+  "Pre-IPO / Late-Stage Funding",
+  "Pre-Seed Stage",
+  "Initial Public Offering (IPO)",
+];
+
+
+// Category options matching database IDs
+const categoryOptions = [
+  { id: 1, name: "Investment", slug: "investment" },
+  { id: 2, name: "Technology", slug: "technology" },
+  { id: 3, name: "Tech Company", slug: "tech" },
+  { id: 4, name: "Hydropower", slug: "hydropower" },
+  { id: 5, name: "Fintech", slug: "fintech" },
+  { id: 6, name: "Edtech", slug: "edtech" },
+  { id: 7, name: "Manufacturing", slug: "manufacturing" },
+  { id: 8, name: "Tourism & Hospitality", slug: "tourism" },
+  { id: 9, name: "Agriculture", slug: "agriculture" },
+  { id: 10, name: "Real Estate", slug: "real-estate" },
+  { id: 11, name: "Healthcare", slug: "healthcare" },
+  { id: 12, name: "Food & Beverage", slug: "food-beverage" },
+  { id: 13, name: "Retail", slug: "retail" },
+  { id: 14, name: "Others", slug: "others" },
+];
+
+const companySizes = [
+  "1–5 Employees",
+  "6–10 Employees",
+  "11–25 Employees",
+  "26–50 Employees",
+  "51–100 Employees",
+  "100+ Employees",
+];
+
 export default function ActiveBusinesses() {
   const { toast } = useToast();
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -139,10 +188,12 @@ export default function ActiveBusinesses() {
   // View Details Dialog
   const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
+  const [viewDetailsTab, setViewDetailsTab] = useState("company");
 
-  // Edit Business Sheet
-  const [editSheetOpen, setEditSheetOpen] = useState(false);
+  // Edit Business Dialog
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingBusiness, setEditingBusiness] = useState<Business | null>(null);
+  const [editTab, setEditTab] = useState("company");
   const [isSaving, setIsSaving] = useState(false);
 
   // Inquiries Dialog
@@ -203,6 +254,7 @@ export default function ActiveBusinesses() {
     try {
       const data = await api.businesses.getDetailsById(business.id) as { business: Business };
       setSelectedBusiness(data.business);
+      setViewDetailsTab("company");
       setViewDetailsOpen(true);
     } catch (error) {
       toast({
@@ -213,9 +265,19 @@ export default function ActiveBusinesses() {
     }
   };
 
-  const handleEditBusiness = (business: Business) => {
-    setEditingBusiness({ ...business });
-    setEditSheetOpen(true);
+  const handleEditBusiness = async (business: Business) => {
+    try {
+      const data = await api.businesses.getDetailsById(business.id) as { business: Business };
+      setEditingBusiness({ ...data.business });
+      setEditTab("company");
+      setEditDialogOpen(true);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to load business details for editing",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSaveEdit = async () => {
@@ -223,19 +285,54 @@ export default function ActiveBusinesses() {
 
     try {
       setIsSaving(true);
-      await api.businesses.update(editingBusiness.id, editingBusiness);
+
+      // Prepare the data for update, excluding read-only fields
+      const updateData = {
+        name: editingBusiness.name,
+        registrationNumber: editingBusiness.registrationNumber,
+        panNumber: (editingBusiness as any).panNumber || null,
+        categoryId: editingBusiness.category?.id,
+        businessType: editingBusiness.businessType,
+        yearEstablished: editingBusiness.yearEstablished,
+        teamSize: editingBusiness.teamSize,
+        promoterProfile: editingBusiness.promoterProfile || null,
+        location: editingBusiness.location,
+        address: editingBusiness.address || null,
+        contactEmail: editingBusiness.contactEmail,
+        contactPhone: editingBusiness.contactPhone,
+        website: editingBusiness.website || null,
+        facebookUrl: editingBusiness.facebookUrl || null,
+        linkedinUrl: editingBusiness.linkedinUrl || null,
+        instagramUrl: editingBusiness.instagramUrl || null,
+        fundingStage: editingBusiness.fundingStage || null,
+        paidUpCapital: editingBusiness.paidUpCapital || null,
+        briefDescription: editingBusiness.briefDescription,
+        fullDescription: editingBusiness.fullDescription || null,
+        vision: editingBusiness.vision || null,
+        mission: editingBusiness.mission || null,
+        growthPlans: editingBusiness.growthPlans || null,
+        minimumInvestmentUnits: editingBusiness.minimumInvestmentUnits || null,
+        maximumInvestmentUnits: editingBusiness.maximumInvestmentUnits || null,
+        pricePerUnit: editingBusiness.pricePerUnit || null,
+        expectedReturnOptions: editingBusiness.expectedReturnOptions || null,
+        estimatedMarketValuation: editingBusiness.estimatedMarketValuation || null,
+        ipoTimeHorizon: editingBusiness.ipoTimeHorizon || null,
+        isFeatured: editingBusiness.isFeatured,
+      };
+
+      await api.businesses.update(editingBusiness.id, updateData);
 
       toast({
         title: "Success",
         description: "Business updated successfully",
       });
 
-      setEditSheetOpen(false);
+      setEditDialogOpen(false);
       fetchBusinesses();
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update business",
+        description: error instanceof Error ? error.message : "Failed to update business",
         variant: "destructive",
       });
     } finally {
@@ -738,23 +835,41 @@ export default function ActiveBusinesses() {
         </Card>
       )}
 
-      {/* View Details Dialog */}
+      {/* View Details Dialog - Tab-based UI */}
       <Dialog open={viewDetailsOpen} onOpenChange={setViewDetailsOpen}>
         <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Business Details</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              {selectedBusiness?.name || "Business Details"}
+            </DialogTitle>
             <DialogDescription>
-              Complete information about this business
+              View complete information about this business
             </DialogDescription>
           </DialogHeader>
           {selectedBusiness && (
-            <div className="space-y-6">
-              {/* Company Information */}
-              <div>
-                <h4 className="font-semibold mb-3 flex items-center gap-2 text-base">
-                  <Building2 className="h-4 w-4" />
-                  Company Information
-                </h4>
+            <Tabs value={viewDetailsTab} onValueChange={setViewDetailsTab} className="mt-4">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="company" className="text-xs sm:text-sm">
+                  <Building2 className="mr-1 h-4 w-4" />
+                  <span className="hidden sm:inline">Company</span>
+                </TabsTrigger>
+                <TabsTrigger value="contact" className="text-xs sm:text-sm">
+                  <Briefcase className="mr-1 h-4 w-4" />
+                  <span className="hidden sm:inline">Contact</span>
+                </TabsTrigger>
+                <TabsTrigger value="business" className="text-xs sm:text-sm">
+                  <FileText className="mr-1 h-4 w-4" />
+                  <span className="hidden sm:inline">Business</span>
+                </TabsTrigger>
+                <TabsTrigger value="documents" className="text-xs sm:text-sm">
+                  <Upload className="mr-1 h-4 w-4" />
+                  <span className="hidden sm:inline">Documents</span>
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Company Tab */}
+              <TabsContent value="company" className="space-y-4 mt-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-xs text-muted-foreground">Company Name</Label>
@@ -765,30 +880,69 @@ export default function ActiveBusinesses() {
                     <p className="text-sm font-medium">{selectedBusiness.registrationNumber || "N/A"}</p>
                   </div>
                   <div>
-                    <Label className="text-xs text-muted-foreground">Industry</Label>
-                    <p className="text-sm font-medium">{selectedBusiness.category.name || "N/A"}</p>
+                    <Label className="text-xs text-muted-foreground">PAN Number</Label>
+                    <p className="text-sm font-medium">{(selectedBusiness as any).panNumber || "N/A"}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Industry/Sector</Label>
+                    <p className="text-sm font-medium">{selectedBusiness.category?.name || "N/A"}</p>
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">Business Type</Label>
                     <p className="text-sm font-medium">{selectedBusiness.businessType || "N/A"}</p>
                   </div>
                   <div>
-                    <Label className="text-xs text-muted-foreground">Year Founded</Label>
+                    <Label className="text-xs text-muted-foreground">Year Established</Label>
                     <p className="text-sm font-medium">{selectedBusiness.yearEstablished || "N/A"}</p>
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">Company Size</Label>
                     <p className="text-sm font-medium">{selectedBusiness.teamSize || "N/A"}</p>
                   </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Promoter Profile</Label>
+                    <p className="text-sm font-medium">{selectedBusiness.promoterProfile || "N/A"}</p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Contact Information */}
-              <div>
-                <h4 className="font-semibold mb-3 flex items-center gap-2 text-base">
-                  <Mail className="h-4 w-4" />
-                  Contact Information
-                </h4>
+                {/* Status & Metrics */}
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="font-semibold mb-3 text-sm">Status & Metrics</h4>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Status</Label>
+                      <div className="mt-1">
+                        <Badge className={selectedBusiness.isActive ? "bg-green-500" : "bg-orange-500"}>
+                          {selectedBusiness.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">View Count</Label>
+                      <p className="text-sm font-medium">{selectedBusiness.viewCount || 0} views</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Featured</Label>
+                      <div className="mt-1">
+                        <Badge variant={selectedBusiness.isFeatured ? "default" : "outline"}>
+                          {selectedBusiness.isFeatured ? "Yes" : "No"}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Created On</Label>
+                      <p className="text-sm font-medium">{new Date(selectedBusiness.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Last Updated</Label>
+                      <p className="text-sm font-medium">{new Date(selectedBusiness.updatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Contact Tab */}
+              <TabsContent value="contact" className="space-y-4 mt-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-xs text-muted-foreground">Email</Label>
@@ -806,105 +960,136 @@ export default function ActiveBusinesses() {
                     <Label className="text-xs text-muted-foreground">Location</Label>
                     <p className="text-sm font-medium">{selectedBusiness.location || "N/A"}</p>
                   </div>
+                  <div className="col-span-2">
+                    <Label className="text-xs text-muted-foreground">Address</Label>
+                    <p className="text-sm font-medium">{selectedBusiness.address || "N/A"}</p>
+                  </div>
                 </div>
-                {(selectedBusiness.facebookUrl || selectedBusiness.linkedinUrl || selectedBusiness.instagramUrl) && (
-                  <div className="mt-3">
-                    <Label className="text-xs text-muted-foreground">Social Media</Label>
-                    <div className="flex gap-2 mt-1">
-                      {selectedBusiness.facebookUrl && (
-                        <a href={selectedBusiness.facebookUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
-                          Facebook
+
+                {/* Social Media */}
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="font-semibold mb-3 text-sm">Social Media</h4>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Facebook</Label>
+                      {selectedBusiness.facebookUrl ? (
+                        <a href={selectedBusiness.facebookUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline block truncate">
+                          {selectedBusiness.facebookUrl}
                         </a>
-                      )}
-                      {selectedBusiness.linkedinUrl && (
-                        <a href={selectedBusiness.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
-                          LinkedIn
-                        </a>
-                      )}
-                      {selectedBusiness.instagramUrl && (
-                        <a href={selectedBusiness.instagramUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
-                          Instagram
-                        </a>
+                      ) : (
+                        <p className="text-sm font-medium">N/A</p>
                       )}
                     </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">LinkedIn</Label>
+                      {selectedBusiness.linkedinUrl ? (
+                        <a href={selectedBusiness.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline block truncate">
+                          {selectedBusiness.linkedinUrl}
+                        </a>
+                      ) : (
+                        <p className="text-sm font-medium">N/A</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Instagram</Label>
+                      {selectedBusiness.instagramUrl ? (
+                        <a href={selectedBusiness.instagramUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline block truncate">
+                          {selectedBusiness.instagramUrl}
+                        </a>
+                      ) : (
+                        <p className="text-sm font-medium">N/A</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Business Tab */}
+              <TabsContent value="business" className="space-y-4 mt-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Brief Description</Label>
+                  <p className="text-sm mt-1">{selectedBusiness.briefDescription || "N/A"}</p>
+                </div>
+                {selectedBusiness.fullDescription && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Full Description</Label>
+                    <p className="text-sm whitespace-pre-wrap mt-1">{selectedBusiness.fullDescription}</p>
                   </div>
                 )}
-              </div>
-
-              {/* Business Details */}
-              <div>
-                <h4 className="font-semibold mb-3 text-base">Business Details</h4>
-                <div className="space-y-3">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Brief Description</Label>
-                    <p className="text-sm">{selectedBusiness.briefDescription || "N/A"}</p>
-                  </div>
-                  {selectedBusiness.fullDescription && (
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Full Description</Label>
-                      <p className="text-sm whitespace-pre-wrap">{selectedBusiness.fullDescription}</p>
-                    </div>
-                  )}
-                  {selectedBusiness.growthPlans && (
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Use of Funds / Growth Plans</Label>
-                      <p className="text-sm whitespace-pre-wrap">{selectedBusiness.growthPlans}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Financial Information */}
-              <div>
-                <h4 className="font-semibold mb-3 text-base">Financial Information</h4>
                 <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Funding Stage</Label>
+                    <p className="text-sm font-medium">{selectedBusiness.fundingStage || "N/A"}</p>
+                  </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">Paid-Up Capital</Label>
                     <p className="text-sm font-medium">{selectedBusiness.paidUpCapital || "N/A"}</p>
                   </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Investment Units Range</Label>
-                    <p className="text-sm font-medium">
-                      Min: {selectedBusiness.minimumInvestmentUnits?.toLocaleString() || "N/A"} - Max: {selectedBusiness.maximumInvestmentUnits?.toLocaleString() || "N/A"}
-                    </p>
+                </div>
+                {(selectedBusiness.vision || selectedBusiness.mission) && (
+                  <div className="grid grid-cols-2 gap-4">
+                    {selectedBusiness.vision && (
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Vision</Label>
+                        <p className="text-sm mt-1">{selectedBusiness.vision}</p>
+                      </div>
+                    )}
+                    {selectedBusiness.mission && (
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Mission</Label>
+                        <p className="text-sm mt-1">{selectedBusiness.mission}</p>
+                      </div>
+                    )}
                   </div>
-                  {selectedBusiness.pricePerUnit && (
+                )}
+                {selectedBusiness.growthPlans && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Use of Funds / Growth Plans</Label>
+                    <p className="text-sm whitespace-pre-wrap mt-1">{selectedBusiness.growthPlans}</p>
+                  </div>
+                )}
+
+                {/* Investment Parameters */}
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="font-semibold mb-3 text-sm">Investment Parameters</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Minimum Investment Units</Label>
+                      <p className="text-sm font-medium">{selectedBusiness.minimumInvestmentUnits?.toLocaleString() || "N/A"}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Maximum Investment Units</Label>
+                      <p className="text-sm font-medium">{selectedBusiness.maximumInvestmentUnits?.toLocaleString() || "N/A"}</p>
+                    </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">Price Per Unit</Label>
-                      <p className="text-sm font-medium">NPR {selectedBusiness.pricePerUnit?.toLocaleString()}</p>
+                      <p className="text-sm font-medium">{selectedBusiness.pricePerUnit ? `NPR ${selectedBusiness.pricePerUnit.toLocaleString()}` : "N/A"}</p>
                     </div>
-                  )}
-                  {selectedBusiness.expectedReturnOptions && (
                     <div>
                       <Label className="text-xs text-muted-foreground">Expected Return</Label>
-                      <p className="text-sm font-medium">{selectedBusiness.expectedReturnOptions}</p>
+                      <p className="text-sm font-medium">{selectedBusiness.expectedReturnOptions || "N/A"}</p>
                     </div>
-                  )}
-                  {selectedBusiness.estimatedMarketValuation && (
                     <div>
                       <Label className="text-xs text-muted-foreground">Market Valuation</Label>
-                      <p className="text-sm font-medium">NPR {selectedBusiness.estimatedMarketValuation?.toLocaleString()}</p>
+                      <p className="text-sm font-medium">{selectedBusiness.estimatedMarketValuation ? `NPR ${selectedBusiness.estimatedMarketValuation.toLocaleString()}` : "N/A"}</p>
                     </div>
-                  )}
-                  {selectedBusiness.ipoTimeHorizon && (
                     <div>
                       <Label className="text-xs text-muted-foreground">IPO Timeline</Label>
-                      <p className="text-sm font-medium">{selectedBusiness.ipoTimeHorizon}</p>
+                      <p className="text-sm font-medium">{selectedBusiness.ipoTimeHorizon || "N/A"}</p>
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
+              </TabsContent>
 
-              {/* Documents */}
-              {selectedBusiness.media && selectedBusiness.media.length > 0 && (
-                <div>
-                  <h4 className="font-semibold mb-3 text-base">Uploaded Documents & Media</h4>
+              {/* Documents Tab */}
+              <TabsContent value="documents" className="space-y-4 mt-4">
+                {selectedBusiness.media && selectedBusiness.media.length > 0 ? (
                   <div className="space-y-3">
                     {selectedBusiness.media.map((doc: BusinessMedia) => (
                       <div key={doc.id} className="flex items-center justify-between rounded-lg border p-3 bg-secondary/30">
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-                            <Eye className="h-4 w-4 text-blue-600" />
+                            <FileText className="h-4 w-4 text-blue-600" />
                           </div>
                           <div className="min-w-0 flex-1">
                             <p className="font-medium text-sm truncate">{doc.fileName || doc.title || doc.mediaType}</p>
@@ -920,159 +1105,444 @@ export default function ActiveBusinesses() {
                             onClick={() => window.open(doc.fileUrl, '_blank')}
                             className="ml-2 flex-shrink-0"
                           >
+                            <Eye className="h-4 w-4 mr-1" />
                             View
                           </Button>
                         )}
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {/* Status & Metrics */}
-              <div>
-                <h4 className="font-semibold mb-3 text-base">Status & Metrics</h4>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Status</Label>
-                    <div className="mt-1">
-                      <Badge className={selectedBusiness.isActive ? "bg-green-500" : "bg-orange-500"}>
-                        {selectedBusiness.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                    </div>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                    <p>No documents uploaded</p>
                   </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">View Count</Label>
-                    <p className="text-sm font-medium">{selectedBusiness.viewCount || 0} views</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Featured</Label>
-                    <div className="mt-1">
-                      <Badge variant={selectedBusiness.isFeatured ? "default" : "outline"}>
-                        {selectedBusiness.isFeatured ? "Yes" : "No"}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Created On</Label>
-                    <p className="text-sm font-medium">{new Date(selectedBusiness.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground">Last Updated</Label>
-                    <p className="text-sm font-medium">{new Date(selectedBusiness.updatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+                )}
+              </TabsContent>
+            </Tabs>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* Edit Business Sheet */}
-      <Sheet open={editSheetOpen} onOpenChange={setEditSheetOpen}>
-        <SheetContent className="w-full sm:max-w-xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Edit Business</SheetTitle>
-            <SheetDescription>
-              Make changes to business information
-            </SheetDescription>
-          </SheetHeader>
+      {/* Edit Business Dialog - Tab-based UI */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="h-5 w-5" />
+              Edit Business
+            </DialogTitle>
+            <DialogDescription>
+              Make changes to business information. Admin can edit all fields including category.
+            </DialogDescription>
+          </DialogHeader>
           {editingBusiness && (
-            <div className="space-y-4 mt-6">
-              <div>
-                <Label>Business Name</Label>
-                <Input
-                  value={editingBusiness.name}
-                  onChange={(e) => setEditingBusiness({ ...editingBusiness, name: e.target.value })}
-                />
-              </div>
+            <Tabs value={editTab} onValueChange={setEditTab} className="mt-4">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="company" className="text-xs sm:text-sm">
+                  <Building2 className="mr-1 h-4 w-4" />
+                  <span className="hidden sm:inline">Company</span>
+                </TabsTrigger>
+                <TabsTrigger value="contact" className="text-xs sm:text-sm">
+                  <Briefcase className="mr-1 h-4 w-4" />
+                  <span className="hidden sm:inline">Contact</span>
+                </TabsTrigger>
+                <TabsTrigger value="business" className="text-xs sm:text-sm">
+                  <FileText className="mr-1 h-4 w-4" />
+                  <span className="hidden sm:inline">Business</span>
+                </TabsTrigger>
+                <TabsTrigger value="documents" className="text-xs sm:text-sm">
+                  <Upload className="mr-1 h-4 w-4" />
+                  <span className="hidden sm:inline">Documents</span>
+                </TabsTrigger>
+              </TabsList>
 
-              <div>
-                <Label>Location</Label>
-                <Input
-                  value={editingBusiness.location}
-                  onChange={(e) => setEditingBusiness({ ...editingBusiness, location: e.target.value })}
-                />
-              </div>
+              {/* Company Tab */}
+              <TabsContent value="company" className="space-y-4 mt-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Company Name *</Label>
+                    <Input
+                      value={editingBusiness.name}
+                      onChange={(e) => setEditingBusiness({ ...editingBusiness, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Registration Number *</Label>
+                    <Input
+                      value={editingBusiness.registrationNumber}
+                      onChange={(e) => setEditingBusiness({ ...editingBusiness, registrationNumber: e.target.value })}
+                    />
+                  </div>
+                </div>
 
-              <div>
-                <Label>Team Size</Label>
-                <Input
-                  value={editingBusiness.teamSize}
-                  onChange={(e) => setEditingBusiness({ ...editingBusiness, teamSize: e.target.value })}
-                />
-              </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>PAN Number</Label>
+                    <Input
+                      value={(editingBusiness as any).panNumber || ''}
+                      onChange={(e) => setEditingBusiness({ ...editingBusiness, panNumber: e.target.value } as any)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Industry/Sector *</Label>
+                    <Select
+                      value={editingBusiness.category?.id?.toString()}
+                      onValueChange={(value) => {
+                        const cat = categoryOptions.find(c => c.id.toString() === value);
+                        if (cat) {
+                          setEditingBusiness({ ...editingBusiness, category: cat });
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select industry" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categoryOptions.map((category) => (
+                          <SelectItem key={category.id} value={category.id.toString()}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">Admin can change the business sector</p>
+                  </div>
+                </div>
 
-              <div>
-                <Label>Paid-Up Capital</Label>
-                <Input
-                  value={editingBusiness.paidUpCapital || ''}
-                  onChange={(e) => setEditingBusiness({ ...editingBusiness, paidUpCapital: e.target.value })}
-                />
-              </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Business Type</Label>
+                    <Input
+                      value={editingBusiness.businessType}
+                      onChange={(e) => setEditingBusiness({ ...editingBusiness, businessType: e.target.value })}
+                      placeholder="e.g., Private Limited"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Year Established</Label>
+                    <Input
+                      type="number"
+                      value={editingBusiness.yearEstablished || ''}
+                      onChange={(e) => setEditingBusiness({ ...editingBusiness, yearEstablished: e.target.value ? parseInt(e.target.value) : undefined } as any)}
+                      min="1900"
+                      max={new Date().getFullYear()}
+                    />
+                  </div>
+                </div>
 
-              <div>
-                <Label>Minimum Investment Units</Label>
-                <Input
-                  type="number"
-                  value={editingBusiness.minimumInvestmentUnits || ''}
-                  onChange={(e) => setEditingBusiness({ ...editingBusiness, minimumInvestmentUnits: e.target.value ? parseInt(e.target.value) : undefined })}
-                />
-              </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Company Size</Label>
+                    <Select
+                      value={editingBusiness.teamSize}
+                      onValueChange={(value) => setEditingBusiness({ ...editingBusiness, teamSize: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select company size" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {companySizes.map((size) => (
+                          <SelectItem key={size} value={size}>
+                            {size}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Promoter Profile</Label>
+                    <Input
+                      value={editingBusiness.promoterProfile || ''}
+                      onChange={(e) => setEditingBusiness({ ...editingBusiness, promoterProfile: e.target.value })}
+                      placeholder="e.g., ABC Group, XYZ Holdings"
+                    />
+                  </div>
+                </div>
 
-              <div>
-                <Label>Maximum Investment Units</Label>
-                <Input
-                  type="number"
-                  value={editingBusiness.maximumInvestmentUnits || ''}
-                  onChange={(e) => setEditingBusiness({ ...editingBusiness, maximumInvestmentUnits: e.target.value ? parseInt(e.target.value) : undefined })}
-                />
-              </div>
+                <div className="flex items-center gap-4 pt-4 border-t">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="isFeatured"
+                      checked={editingBusiness.isFeatured}
+                      onChange={(e) => setEditingBusiness({ ...editingBusiness, isFeatured: e.target.checked })}
+                      className="h-4 w-4"
+                    />
+                    <Label htmlFor="isFeatured">Featured Business</Label>
+                  </div>
+                </div>
+              </TabsContent>
 
-              <div>
-                <Label>Brief Description</Label>
-                <Textarea
-                  value={editingBusiness.briefDescription}
-                  onChange={(e) => setEditingBusiness({ ...editingBusiness, briefDescription: e.target.value })}
-                  rows={3}
-                />
-              </div>
+              {/* Contact Tab */}
+              <TabsContent value="contact" className="space-y-4 mt-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Contact Email *</Label>
+                    <Input
+                      type="email"
+                      value={editingBusiness.contactEmail}
+                      onChange={(e) => setEditingBusiness({ ...editingBusiness, contactEmail: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Contact Phone *</Label>
+                    <Input
+                      value={editingBusiness.contactPhone}
+                      onChange={(e) => setEditingBusiness({ ...editingBusiness, contactPhone: e.target.value })}
+                    />
+                  </div>
+                </div>
 
-              <div>
-                <Label>Full Description</Label>
-                <Textarea
-                  value={editingBusiness.fullDescription || ''}
-                  onChange={(e) => setEditingBusiness({ ...editingBusiness, fullDescription: e.target.value })}
-                  rows={5}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label>Website</Label>
+                  <Input
+                    type="url"
+                    value={editingBusiness.website || ''}
+                    onChange={(e) => setEditingBusiness({ ...editingBusiness, website: e.target.value })}
+                    placeholder="https://www.company.com"
+                  />
+                </div>
 
-              <div>
-                <Label>Contact Email</Label>
-                <Input
-                  type="email"
-                  value={editingBusiness.contactEmail}
-                  onChange={(e) => setEditingBusiness({ ...editingBusiness, contactEmail: e.target.value })}
-                />
-              </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Location *</Label>
+                    <Input
+                      value={editingBusiness.location}
+                      onChange={(e) => setEditingBusiness({ ...editingBusiness, location: e.target.value })}
+                      placeholder="e.g., Kathmandu, Nepal"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Address</Label>
+                    <Input
+                      value={editingBusiness.address || ''}
+                      onChange={(e) => setEditingBusiness({ ...editingBusiness, address: e.target.value })}
+                      placeholder="Street address"
+                    />
+                  </div>
+                </div>
 
-              <div>
-                <Label>Contact Phone</Label>
-                <Input
-                  value={editingBusiness.contactPhone}
-                  onChange={(e) => setEditingBusiness({ ...editingBusiness, contactPhone: e.target.value })}
-                />
-              </div>
+                {/* Social Media */}
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="font-semibold mb-3 text-sm">Social Media</h4>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>LinkedIn</Label>
+                      <Input
+                        type="url"
+                        value={editingBusiness.linkedinUrl || ''}
+                        onChange={(e) => setEditingBusiness({ ...editingBusiness, linkedinUrl: e.target.value })}
+                        placeholder="https://linkedin.com/company/..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Facebook</Label>
+                      <Input
+                        type="url"
+                        value={editingBusiness.facebookUrl || ''}
+                        onChange={(e) => setEditingBusiness({ ...editingBusiness, facebookUrl: e.target.value })}
+                        placeholder="https://facebook.com/..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Instagram</Label>
+                      <Input
+                        type="url"
+                        value={editingBusiness.instagramUrl || ''}
+                        onChange={(e) => setEditingBusiness({ ...editingBusiness, instagramUrl: e.target.value })}
+                        placeholder="https://instagram.com/..."
+                      />
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
 
-              <div>
-                <Label>Website</Label>
-                <Input
-                  value={editingBusiness.website || ''}
-                  onChange={(e) => setEditingBusiness({ ...editingBusiness, website: e.target.value })}
-                />
-              </div>
+              {/* Business Tab */}
+              <TabsContent value="business" className="space-y-4 mt-4">
+                <div className="space-y-2">
+                  <Label>Brief Description *</Label>
+                  <Textarea
+                    value={editingBusiness.briefDescription}
+                    onChange={(e) => setEditingBusiness({ ...editingBusiness, briefDescription: e.target.value })}
+                    rows={3}
+                    placeholder="Brief description of your business..."
+                  />
+                </div>
 
-              <div className="flex gap-2 pt-4">
+                <div className="space-y-2">
+                  <Label>Full Description</Label>
+                  <Textarea
+                    value={editingBusiness.fullDescription || ''}
+                    onChange={(e) => setEditingBusiness({ ...editingBusiness, fullDescription: e.target.value })}
+                    rows={5}
+                    placeholder="Detailed description of your business..."
+                  />
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Funding Stage</Label>
+                    <Select
+                      value={editingBusiness.fundingStage || ''}
+                      onValueChange={(value) => setEditingBusiness({ ...editingBusiness, fundingStage: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select funding stage" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {fundingStages.map((stage) => (
+                          <SelectItem key={stage} value={stage}>
+                            {stage}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Paid-Up Capital</Label>
+                    <Input
+                      value={editingBusiness.paidUpCapital || ''}
+                      onChange={(e) => setEditingBusiness({ ...editingBusiness, paidUpCapital: e.target.value })}
+                      placeholder="e.g., 50 Lakhs, 1 Crore, etc."
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Vision</Label>
+                    <Textarea
+                      value={editingBusiness.vision || ''}
+                      onChange={(e) => setEditingBusiness({ ...editingBusiness, vision: e.target.value })}
+                      rows={3}
+                      placeholder="Company vision..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Mission</Label>
+                    <Textarea
+                      value={editingBusiness.mission || ''}
+                      onChange={(e) => setEditingBusiness({ ...editingBusiness, mission: e.target.value })}
+                      rows={3}
+                      placeholder="Company mission..."
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Use of Funds / Growth Plans</Label>
+                  <Textarea
+                    value={editingBusiness.growthPlans || ''}
+                    onChange={(e) => setEditingBusiness({ ...editingBusiness, growthPlans: e.target.value })}
+                    rows={4}
+                    placeholder="Explain how funds will be used..."
+                  />
+                </div>
+
+                {/* Investment Parameters */}
+                <div className="border-t pt-4 mt-4">
+                  <h4 className="font-semibold mb-3 text-sm">Investment Parameters</h4>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>Minimum Investment Units</Label>
+                      <Input
+                        type="number"
+                        value={editingBusiness.minimumInvestmentUnits || ''}
+                        onChange={(e) => setEditingBusiness({ ...editingBusiness, minimumInvestmentUnits: e.target.value ? parseInt(e.target.value) : undefined })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Maximum Investment Units</Label>
+                      <Input
+                        type="number"
+                        value={editingBusiness.maximumInvestmentUnits || ''}
+                        onChange={(e) => setEditingBusiness({ ...editingBusiness, maximumInvestmentUnits: e.target.value ? parseInt(e.target.value) : undefined })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Price per Unit (NPR)</Label>
+                      <Input
+                        type="number"
+                        value={editingBusiness.pricePerUnit || ''}
+                        onChange={(e) => setEditingBusiness({ ...editingBusiness, pricePerUnit: e.target.value ? parseFloat(e.target.value) : undefined })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Estimated Market Valuation (NPR)</Label>
+                      <Input
+                        type="number"
+                        value={editingBusiness.estimatedMarketValuation || ''}
+                        onChange={(e) => setEditingBusiness({ ...editingBusiness, estimatedMarketValuation: e.target.value ? parseFloat(e.target.value) : undefined })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Expected Return Options</Label>
+                      <Input
+                        value={editingBusiness.expectedReturnOptions || ''}
+                        onChange={(e) => setEditingBusiness({ ...editingBusiness, expectedReturnOptions: e.target.value })}
+                        placeholder="e.g., IPO Upside or dividend"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>IPO Time Horizon</Label>
+                      <Input
+                        value={editingBusiness.ipoTimeHorizon || ''}
+                        onChange={(e) => setEditingBusiness({ ...editingBusiness, ipoTimeHorizon: e.target.value })}
+                        placeholder="e.g., 3-5 years"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Documents Tab */}
+              <TabsContent value="documents" className="space-y-4 mt-4">
+                <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
+                  <p className="text-sm text-amber-800">
+                    <AlertCircle className="h-4 w-4 inline mr-2" />
+                    Documents can only be viewed here. To upload new documents, use the business profile page or contact the business owner.
+                  </p>
+                </div>
+                {editingBusiness.media && editingBusiness.media.length > 0 ? (
+                  <div className="space-y-3">
+                    {editingBusiness.media.map((doc: BusinessMedia) => (
+                      <div key={doc.id} className="flex items-center justify-between rounded-lg border p-3 bg-secondary/30">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                            <FileText className="h-4 w-4 text-blue-600" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-sm truncate">{doc.fileName || doc.title || doc.mediaType}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {doc.mediaType} {doc.fileSize && `• ${(parseInt(doc.fileSize) / 1024).toFixed(2)} KB`}
+                            </p>
+                          </div>
+                        </div>
+                        {doc.fileUrl && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(doc.fileUrl, '_blank')}
+                            className="ml-2 flex-shrink-0"
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            View
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                    <p>No documents uploaded</p>
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* Save Button */}
+              <div className="flex gap-2 pt-4 border-t mt-4">
                 <Button onClick={handleSaveEdit} disabled={isSaving} className="flex-1">
                   {isSaving ? (
                     <>
@@ -1083,14 +1553,14 @@ export default function ActiveBusinesses() {
                     'Save Changes'
                   )}
                 </Button>
-                <Button variant="outline" onClick={() => setEditSheetOpen(false)} disabled={isSaving}>
+                <Button variant="outline" onClick={() => setEditDialogOpen(false)} disabled={isSaving}>
                   Cancel
                 </Button>
               </div>
-            </div>
+            </Tabs>
           )}
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
 
       {/* Inquiries Dialog */}
       <Dialog open={inquiriesDialogOpen} onOpenChange={setInquiriesDialogOpen}>
